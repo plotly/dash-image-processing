@@ -5,8 +5,8 @@ import numpy as np
 from PIL import Image
 
 
-IM_FORMAT = b'png'
-HTML_IMG_SRC_PARAMETERS = b'data:image/' + IM_FORMAT + b';base64'
+IM_FORMAT = 'png'
+HTML_IMG_SRC_PARAMETERS = 'data:image/' + IM_FORMAT + ';base64, '
 
 
 def pil_to_b64(im, enc_format='png'):
@@ -55,7 +55,7 @@ def b64_to_numpy(string, to_scalar=True):
     np_array = np.asarray(im)
 
     if to_scalar:
-        np_array /= 255.
+        np_array = np_array / 255.
 
     return np_array
 
