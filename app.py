@@ -15,7 +15,6 @@ RANGE = [0, 1]
 app = dash.Dash(__name__)
 server = app.server
 
-
 # Custom Script for Heroku
 if 'DYNO' in os.environ:
     app.scripts.append_script({
@@ -33,70 +32,52 @@ im_pil = Image.open('images/IU2.jpg')
 small_im = display(im_pil)
 
 
-def InteractiveImage(id, im_pil):
-    encoded_image = pil_to_b64(im_pil, enc_format='png')
-    width, height = im_pil.size
+def InteractiveImage(id, image):
+    encoded_image = pil_to_b64(image, enc_format='png')
+    width, height = image.size
 
     return dcc.Graph(
         id=id,
         figure={
             'data': [],
             'layout': {
-                'margin': go.Margin(l=40, b=40, t=5, r=5),
-                # 'width': '100%',
+                'margin': go.Margin(l=40, b=40, t=26, r=10),
                 'xaxis': {
                     'range': (0, width),
-                    'scaleanchor': 'y'
+                    'scaleanchor': 'y',
+                    'scaleratio': 1
                 },
                 'yaxis': {
                     'range': (0, height)
                 },
-                'autorange': False,
                 'images': [{
                     'xref': 'x',
                     'yref': 'y',
                     'x': 0,
                     'y': 0,
                     'yanchor': 'bottom',
+                    'sizing': 'stretch',
                     'sizex': width,
                     'sizey': height,
                     'layer': 'below',
-                    'source': 'data:image/png;base64,{}'.format(encoded_image)
+                    'source': 'data:image/png;base64,{}'.format(encoded_image),
                 }],
-                'dragmode': 'select'  # or 'lasso'
+                'dragmode': 'select',
             }
+        },
+        style={
+            'height': '{}vw'.format(round(45 * height/width)),
+        },
+        config={
+            'modeBarButtonsToRemove': [
+                'sendDataToCloud',
+                'autoScale2d',
+                'toggleSpikelines',
+                'hoverClosestCartesian',
+                'hoverCompareCartesian'
+            ]
         }
     )
-
-    # return dcc.Graph(
-    #     id=id,
-    #     figure={
-    #         'data': [],
-    #         'layout': {
-    #             'margin': go.Margin(l=40, b=40, t=5, r=5),
-    #             # 'width': '100%',
-    #             'xaxis': {
-    #                 'range': [0,1199]
-    #             },
-    #             'yaxis': {
-    #                 'range': [0,778]
-    #             },
-    #             'images': [{
-    #                 'xref': 'x',
-    #                 'yref': 'y',
-    #                 'x': 0,
-    #                 'y': 0,
-    #                 'yanchor': 'bottom',
-    #                 'sizex': width,
-    #                 'sizey': height,
-    #                 'sizing': 'contain',
-    #                 'layer': 'below',
-    #                 'source': 'https://upload.wikimedia.org/wikipedia/commons/8/84/Rose-ringed_Parakeet_Psittacula_krameri_male_by_Dr._Raju_Kasambe_DSCN8937_%283%29.jpg'
-    #             }],
-    #             'dragmode': 'select'  # or 'lasso'
-    #         }
-    #     }
-    # )
 
 
 app.layout = html.Div([
@@ -116,14 +97,29 @@ app.layout = html.Div([
     # Body
     html.Div([
         html.Div(className='row', children=[
-            html.Div(className='six columns', children=[
+            html.Div(className='five columns', children=[
                 html.Img(src=HTML_IMG_SRC_PARAMETERS + pil_to_b64(im_pil), width='100%')
             ]),
 
-            html.Div(
-                className='six columns',
-                children=InteractiveImage('iu-img', im_pil)
-            )
+            html.Div(className='seven columns', style={'width': 'auto'}, children=[
+                dcc.Upload([
+                    'Drag and Drop or ',
+                    html.A('Select a File')
+                ],
+                    style={
+                    'width': '100%',
+                    'height': '60px',
+                    'lineHeight': '60px',
+                    'borderWidth': '1px',
+                    'borderStyle': 'dashed',
+                    'borderRadius': '5px',
+                    'textAlign': 'center'
+                }),
+
+                html.Div(id='div-storage-image'),
+
+                InteractiveImage('iu-img', im_pil)
+            ])
         ])
 
     ],
@@ -131,7 +127,6 @@ app.layout = html.Div([
     )
 
 ])
-
 
 external_css = [
     "https://cdnjs.cloudflare.com/ajax/libs/normalize/7.0.0/normalize.min.css",  # Normalize the CSS
