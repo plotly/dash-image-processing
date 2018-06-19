@@ -1,6 +1,0 @@
-/* For devices larger than 550px */
-@media (min-width: 550px) {
-    .custom-seven.columns {
-        width: 60%;
-    }
-}
