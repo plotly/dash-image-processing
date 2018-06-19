@@ -101,7 +101,7 @@ app.layout = html.Div([
                 html.Img(src=HTML_IMG_SRC_PARAMETERS + pil_to_b64(im_pil), width='100%')
             ]),
 
-            html.Div(className='seven columns', style={'width': 'auto'}, children=[
+            html.Div(className='custom-seven columns', children=[
                 dcc.Upload([
                     'Drag and Drop or ',
                     html.A('Select a File')
@@ -132,7 +132,8 @@ external_css = [
     "https://cdnjs.cloudflare.com/ajax/libs/normalize/7.0.0/normalize.min.css",  # Normalize the CSS
     "https://fonts.googleapis.com/css?family=Open+Sans|Roboto"  # Fonts
     "https://maxcdn.bootstrapcdn.com/font-awesome/4.7.0/css/font-awesome.min.css",
-    "https://cdn.rawgit.com/xhlulu/0acba79000a3fd1e6f552ed82edb8a64/raw/dash_template.css"  # For production
+    "https://cdn.rawgit.com/xhlulu/0acba79000a3fd1e6f552ed82edb8a64/raw/dash_template.css"  # For production,
+    "https://rawgit.com/xhlulu/dash-image-display-experiments/master/custom_styles.css"  # For Development
 ]
 
 for css in external_css:
