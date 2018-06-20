@@ -138,6 +138,7 @@ def update_interactive_image(children):
             image_id='interactive-image',
             image=im_pil
         )
+
     else:
         return None
 

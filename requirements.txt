@@ -8,4 +8,4 @@ plotly==2.5.1
 flask==1.0.1
 gunicorn==19.8.1
 scipy==1.0.1
-pillow==4.2.1
+pillow==5.1.0

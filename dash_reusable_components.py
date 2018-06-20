@@ -148,12 +148,14 @@ def NamedInlineRadioItems(name, short, options, val, **kwargs):
 
 
 # Custom Image Components
-def InteractiveImagePIL(image_id, image, enc_format='png', **kwargs):
+def InteractiveImagePIL(image_id, image, enc_format='png', display_mode='scalable', **kwargs):
     encoded_image = pil_to_b64(image, enc_format=enc_format)
     width, height = image.size
-    print(image.size)
-    # display_height = '{}vw'.format(round(60 * height / width))
-    display_height = '50vh'
+
+    if display_mode == 'scalable':
+        display_height = '{}vw'.format(round(60 * height / width))
+    else:
+        display_height = '75vh'
 
     return dcc.Graph(
         id=image_id,
