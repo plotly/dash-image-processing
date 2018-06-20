@@ -14,7 +14,8 @@ import dash_html_components as html
 import dash_reusable_components as drc
 import plotly.graph_objs as go
 
-from utils import PROCESS_OPTIONS, apply_process
+from utils import PROCESS_OPTIONS, STORAGE_PLACEHOLDER
+from utils import apply_process
 
 DEBUG = True
 
@@ -66,7 +67,7 @@ app.layout = html.Div([
 
                 html.Div(
                     id='div-storage-image',
-                    children=[None, None, None],  # [Bytes, Filename, Image Size]
+                    children=STORAGE_PLACEHOLDER,  # [Bytes, Filename, Image Size]
                     style={'display': 'none'}
                 ),
 
@@ -81,7 +82,15 @@ app.layout = html.Div([
             ])),
 
             html.Div(className='eight columns', children=[
-                html.Div(id='div-interactive-image'),
+                html.Div(
+                    id='div-interactive-image',
+                    # children=drc.InteractiveImagePIL(
+                    #     image_id='interactive-image',
+                    #     image=None,
+                    #     enc_format='bmp',
+                    #     verbose=DEBUG
+                    # )
+                ),
 
                 html.Div(id='div-image-json'),
             ])
@@ -95,33 +104,39 @@ app.layout = html.Div([
                Input('dropdown-process', 'value')],
               [State('upload-image', 'filename'),
                State('div-storage-image', 'children')])
-def update_image_storage(content, process, filename, old_storage):
-    # If filename has changed
-    old_filename = old_storage[1]
+def update_image_storage(content, process, new_filename, storage):
+    t1 = time.time()
 
-    # If the file has changed (when user uploads something)
-    if filename != old_filename:
+    # Retrieve data from storage
+    enc_str, filename, im_size, im_mode = storage
+
+    # If the file has changed (when a file is uploaded)
+    if new_filename and new_filename != filename:
         if DEBUG:
-            print(old_filename, "replaced by", filename)
-
-        t1 = time.time()
+            print(filename, "replaced by", new_filename)
 
         string = content.split(';base64,')[-1]
         im_pil = drc.b64_to_pil(string)
-        im_bytes = im_pil.tobytes()
-        enc_str = base64.b64encode(im_bytes).decode('ascii')
-        im_size = im_pil.size
-
-        t2 = time.time()
-        if DEBUG:
-            print(f"Updated Image Storage in {t2-t1:.3f} sec")
-
-        return [enc_str, filename, str(im_size)]
 
     elif process:
-        pass
+        im_pil = drc.bytes_string_to_pil(encoding_string=enc_str, size=im_size, mode=im_mode)
 
-    return old_storage
+        apply_process(
+            image=im_pil,
+            zone=(0, 0, 500, 500),
+            process=process,
+            mode='select')
+
+    else:
+        return storage
+
+    enc_str, im_size, im_mode = drc.pil_to_bytes_string(im_pil)
+
+    t2 = time.time()
+    if DEBUG:
+        print(f"Updated Image Storage in {t2-t1:.3f} sec")
+
+    return [enc_str, new_filename, str(im_size), im_mode]
 
 
 @app.callback(Output('div-interactive-image', 'children'),
@@ -129,11 +144,9 @@ def update_image_storage(content, process, filename, old_storage):
 def update_interactive_image(children):
     if all(children):
         t1 = time.time()
-        enc_str, filename, im_size = children
-        im_size = eval(im_size)
+        enc_str, filename, im_size, im_mode = children
 
-        decoded = base64.b64decode(enc_str.encode('ascii'))
-        im_pil = Image.frombytes('RGB', im_size, decoded)
+        im_pil = drc.bytes_string_to_pil(encoding_string=enc_str, size=im_size, mode=im_mode)
 
         t2 = time.time()
         if DEBUG:

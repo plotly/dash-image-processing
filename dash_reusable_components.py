@@ -81,6 +81,69 @@ def b64_to_numpy(string, to_scalar=True):
     return np_array
 
 
+def pil_to_bytes_string(im):
+    """
+    Converts a PIL Image object into the ASCII string representation of its bytes. This is only recommended for
+    its speed, and takes more space than any encoding. The following are sample results ran on a 3356 x 2412
+    jpg image:
+    (to be added)
+
+    Here is the time taken to save the image as a png inside a buffer (BytesIO):
+        Time taken to convert from b64 to PIL:
+        30.6 ms ± 3.58 ms per loop (mean ± std. dev. of 7 runs, 10 loops each)
+
+        Time taken to convert from PIL to b64:
+        1.77 s ± 66.1 ms per loop (mean ± std. dev. of 7 runs, 1 loop each)
+
+    Note that it CANNOT be displayed in html img tags.
+
+    :param im:
+    :return: The encoded string, and the size of the original image
+    """
+    size = im.size
+    mode = im.mode
+    im_bytes = im.tobytes()
+    encoding_string = base64.b64encode(im_bytes).decode('ascii')
+
+    return encoding_string, size, mode
+
+
+def bytes_string_to_pil(encoding_string, size, mode='RGB'):
+    """
+    Converts the ASCII string representation of a PIL Image bytes into the original PIL Image object. This
+    function is only recommended for its speed, and takes more space than any encoding. The following are
+    sample results ran on a 3356 x 2412 jpg image:
+    (to be added)
+
+    Here is the time taken to save the image as a png inside a buffer (BytesIO), then encode into b64:
+
+        Time taken to convert from b64 to PIL:
+        30.6 ms ± 3.58 ms per loop (mean ± std. dev. of 7 runs, 10 loops each)
+
+        Time taken to convert from PIL to b64:
+        1.77 s ± 66.1 ms per loop (mean ± std. dev. of 7 runs, 1 loop each)
+
+    Note that it CANNOT be displayed in html img tags.
+
+    :param encoding_string:
+    :param size:
+    :param mode:
+    :return:
+    """
+    if type(size) is str:
+        size = eval(size)
+
+    if type(size) not in [tuple, list]:
+        raise ValueError("Incorrect Size type when trying to convert from bytes to PIL Image.")
+
+    encoding_bytes = encoding_string.encode('ascii')
+    decoded = base64.b64decode(encoding_bytes)
+
+    im = Image.frombytes(mode, size, decoded)
+
+    return im
+
+
 # Custom Display Components
 def Card(children, **kwargs):
     return html.Section(
