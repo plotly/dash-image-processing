@@ -1,2 +1,4 @@
 .idea/*
 images/*
+*.xml
+*.pyc
