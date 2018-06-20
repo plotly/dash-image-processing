@@ -55,7 +55,8 @@ app.layout = html.Div([
                         'borderStyle': 'dashed',
                         'borderRadius': '5px',
                         'textAlign': 'center'
-                    }),
+                    }
+                ),
 
                 dcc.Dropdown(
                     id='dropdown-process',
@@ -67,16 +68,15 @@ app.layout = html.Div([
                     searchable=False,
                     placeholder='Process'
                 ),
-
-                html.Div(id='div-display-image'),
-                html.Div(id='div-storage-image', children=[None, None, None], style={'display': 'none'}),  # [Bytes, Filename, Image Size]
-                html.Div(id='div-image-json'),
                 html.Button('Submit', id='button')
 
             ])),
 
             html.Div(className='eight columns', children=[
-                html.Div(id='div-interactive-image')
+                html.Div(id='div-interactive-image'),
+                html.Img(id='img-display-image'),
+                html.Div(id='div-storage-image', children=[None, None, None], style={'display': 'none'}),  # [Bytes, Filename, Image Size]
+                html.Div(id='div-image-json'),
             ])
         ])
     ])
@@ -103,35 +103,35 @@ def update_image_storage(content, filename, old_storage):
 
             print(enc_str[:100])
 
-            return [enc_str, filename, im_size]
+            return [enc_str, filename, str(im_size)]
     print(old_storage)
 
     return old_storage
 
 
-@app.callback(Output('div-display-image', 'children'),
+@app.callback(Output('div-interactive-image', 'children'),
               [Input('div-storage-image', 'children'),
                Input('button', 'n_clicks')])
 def update_interactive_image(children, n_clicks):
     print('foo')
 
-    if children[0]:
+    if children[0] and children[1] and children[2]:
         enc_str, filename, im_size = children
+        im_size = eval(im_size)
 
         decoded = base64.b64decode(enc_str.encode('ascii'))
         im_pil = Image.frombytes('RGB', im_size, decoded)
 
+        string = drc.pil_to_b64(im_pil)
+
         print(type(im_pil))
         print(im_pil.size)
+        print('success')
 
-        obj = drc.DisplayImagePIL(
-            id='interactive-image-new',
+        return drc.InteractiveImagePIL(
+            id='interative-image',
             image=im_pil
         )
-
-        print('sucess')
-
-        return obj
     else:
         return None
 

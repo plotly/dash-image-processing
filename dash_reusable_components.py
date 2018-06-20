@@ -10,7 +10,7 @@ from PIL import Image
 
 
 # Variables
-HTML_IMG_SRC_PARAMETERS = 'data:image/raw;base64, '
+HTML_IMG_SRC_PARAMETERS = 'data:image/png;base64, '
 
 
 # Display utility functions
