@@ -1,5 +1,6 @@
 import base64
 from io import BytesIO as _BytesIO
+import time
 
 import dash_core_components as dcc
 import dash_html_components as html
@@ -23,16 +24,22 @@ def _omit(omitted_keys, d):
 
 
 # Image utility functions
-def pil_to_b64(im, enc_format='png'):
+def pil_to_b64(im, enc_format='png', verbose=False):
     """
     Converts a PIL Image into base64 string for HTML displaying
     :param im: PIL Image object
     :param enc_format: The image format for displaying. If saved the image will have that extension.
     :return: base64 encoding
     """
+    t_start = time.time()
+
     buff = _BytesIO()
     im.save(buff, format=enc_format)
     encoded = base64.b64encode(buff.getvalue()).decode("utf-8")
+
+    t_end = time.time()
+    if verbose:
+        print(f"PIL converted to b64 in {t_end - t_start:.3f} sec")
 
     return encoded
 
@@ -148,11 +155,12 @@ def NamedInlineRadioItems(name, short, options, val, **kwargs):
 
 
 # Custom Image Components
-def InteractiveImagePIL(image_id, image, enc_format='png', display_mode='scalable', **kwargs):
-    encoded_image = pil_to_b64(image, enc_format=enc_format)
+def InteractiveImagePIL(image_id, image, enc_format='png', display_mode='scalable', verbose=False, **kwargs):
+    encoded_image = pil_to_b64(image, enc_format=enc_format, verbose=verbose)
+
     width, height = image.size
 
-    if display_mode == 'scalable':
+    if display_mode.lower() in ['scalable', 'scale']:
         display_height = '{}vw'.format(round(60 * height / width))
     else:
         display_height = '75vh'
@@ -183,7 +191,7 @@ def InteractiveImagePIL(image_id, image, enc_format='png', display_mode='scalabl
                     'layer': 'below',
                     'source': HTML_IMG_SRC_PARAMETERS + encoded_image,
                 }],
-                'dragmode': 'lasso',
+                'dragmode': 'select',
             }
         },
         style=_merge({

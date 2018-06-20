@@ -1,6 +1,7 @@
 import os
 import base64
 import time
+import sys
 
 import pandas as pd
 import numpy as np
@@ -13,7 +14,9 @@ import dash_html_components as html
 import dash_reusable_components as drc
 import plotly.graph_objs as go
 
-RANGE = [0, 1]
+from utils import PROCESS_OPTIONS, apply_process
+
+DEBUG = True
 
 app = dash.Dash(__name__)
 server = app.server
@@ -69,11 +72,7 @@ app.layout = html.Div([
 
                 dcc.Dropdown(
                     id='dropdown-process',
-                    options=[
-                        {'label': 'Smooth', 'value': 'smooth'},
-                        {'label': 'Sharpen', 'value': 'sharpen'},
-                        {'label': 'Find Edges', 'value': 'find_edges'}
-                    ],
+                    options=PROCESS_OPTIONS,
                     searchable=False,
                     placeholder='Process'
                 ),
@@ -92,17 +91,18 @@ app.layout = html.Div([
 
 
 @app.callback(Output('div-storage-image', 'children'),
-              [Input('upload-image', 'contents')],
+              [Input('upload-image', 'contents'),
+               Input('dropdown-process', 'value')],
               [State('upload-image', 'filename'),
                State('div-storage-image', 'children')])
-def update_image_storage(content, filename, old_storage):
+def update_image_storage(content, process, filename, old_storage):
     # If filename has changed
     old_filename = old_storage[1]
-    print(old_filename, "replaced by", filename)
 
     # If the file has changed (when user uploads something)
     if filename != old_filename:
-        extension = filename.split('.')[-1].lower()
+        if DEBUG:
+            print(old_filename, "replaced by", filename)
 
         t1 = time.time()
 
@@ -113,9 +113,13 @@ def update_image_storage(content, filename, old_storage):
         im_size = im_pil.size
 
         t2 = time.time()
-        print(f"Updated Image Storage in {t2-t1:.2f} sec")
+        if DEBUG:
+            print(f"Updated Image Storage in {t2-t1:.3f} sec")
 
         return [enc_str, filename, str(im_size)]
+
+    elif process:
+        pass
 
     return old_storage
 
@@ -132,11 +136,15 @@ def update_interactive_image(children):
         im_pil = Image.frombytes('RGB', im_size, decoded)
 
         t2 = time.time()
-        print(f"Decoded interactive image in {t2-t1:.2f} sec")
+        if DEBUG:
+            print(f"Size of the image file: {sys.getsizeof(enc_str)} bytes")
+            print(f"Decoded interactive image in {t2-t1:.3f} sec")
 
         return drc.InteractiveImagePIL(
             image_id='interactive-image',
-            image=im_pil
+            image=im_pil,
+            enc_format='bmp',
+            verbose=DEBUG
         )
 
     else:
