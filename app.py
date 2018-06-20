@@ -1,5 +1,6 @@
 import os
 import base64
+import time
 
 import pandas as pd
 import numpy as np
@@ -55,7 +56,15 @@ app.layout = html.Div([
                         'borderStyle': 'dashed',
                         'borderRadius': '5px',
                         'textAlign': 'center'
-                    }
+                    },
+
+                    accept='image/*'
+                ),
+
+                html.Div(
+                    id='div-storage-image',
+                    children=[None, None, None],  # [Bytes, Filename, Image Size]
+                    style={'display': 'none'}
                 ),
 
                 dcc.Dropdown(
@@ -74,8 +83,7 @@ app.layout = html.Div([
 
             html.Div(className='eight columns', children=[
                 html.Div(id='div-interactive-image'),
-                html.Img(id='img-display-image'),
-                html.Div(id='div-storage-image', children=[None, None, None], style={'display': 'none'}),  # [Bytes, Filename, Image Size]
+
                 html.Div(id='div-image-json'),
             ])
         ])
@@ -84,82 +92,54 @@ app.layout = html.Div([
 
 
 @app.callback(Output('div-storage-image', 'children'),
-              [Input('upload-image', 'contents'),
-               Input('upload-image', 'filename')],
-              [State('div-storage-image', 'children')])
+              [Input('upload-image', 'contents')],
+              [State('upload-image', 'filename'),
+               State('div-storage-image', 'children')])
 def update_image_storage(content, filename, old_storage):
     # If filename has changed
     old_filename = old_storage[1]
-    print(old_filename, filename)
+    print(old_filename, "replaced by", filename)
 
+    # If the file has changed (when user uploads something)
     if filename != old_filename:
         extension = filename.split('.')[-1].lower()
-        if extension in ['jpg', 'png', 'gif']:
-            string = content.split(';base64,')[-1]
-            im_pil = drc.b64_to_pil(string)
-            im_bytes = im_pil.tobytes()
-            enc_str = base64.b64encode(im_bytes).decode('ascii')
-            im_size = im_pil.size
 
-            print(enc_str[:100])
+        t1 = time.time()
 
-            return [enc_str, filename, str(im_size)]
-    print(old_storage)
+        string = content.split(';base64,')[-1]
+        im_pil = drc.b64_to_pil(string)
+        im_bytes = im_pil.tobytes()
+        enc_str = base64.b64encode(im_bytes).decode('ascii')
+        im_size = im_pil.size
+
+        t2 = time.time()
+        print(f"Updated Image Storage in {t2-t1:.2f} sec")
+
+        return [enc_str, filename, str(im_size)]
 
     return old_storage
 
 
 @app.callback(Output('div-interactive-image', 'children'),
-              [Input('div-storage-image', 'children'),
-               Input('button', 'n_clicks')])
-def update_interactive_image(children, n_clicks):
-    print('foo')
-
-    if children[0] and children[1] and children[2]:
+              [Input('div-storage-image', 'children')])
+def update_interactive_image(children):
+    if all(children):
+        t1 = time.time()
         enc_str, filename, im_size = children
         im_size = eval(im_size)
 
         decoded = base64.b64decode(enc_str.encode('ascii'))
         im_pil = Image.frombytes('RGB', im_size, decoded)
 
-        string = drc.pil_to_b64(im_pil)
-
-        print(type(im_pil))
-        print(im_pil.size)
-        print('success')
+        t2 = time.time()
+        print(f"Decoded interactive image in {t2-t1:.2f} sec")
 
         return drc.InteractiveImagePIL(
-            id='interative-image',
+            image_id='interactive-image',
             image=im_pil
         )
     else:
         return None
-
-
-# @app.callback(Output('div-interactive-image', 'children'),
-#               [Input('upload-image', 'contents'),
-#                Input('upload-image', 'filename')])
-# def update_interactive_image(content, filename):
-#     if filename:
-#         extension = filename.split('.')[-1].lower()
-#         if extension not in ['jpg', 'png', 'gif']:
-#             return "Format is invalid, upload failed."
-#
-#         string = content.split(';base64,')[-1]
-#
-#         return drc.InteractiveImagePIL(
-#             id='interactive-image',
-#             image=drc.b64_to_pil(string),
-#             enc_format='png'
-#         )
-#     else:
-#         return None
-
-
-# @app.callback(Output('div-image-json', 'children'),
-#               [Input('graph-interactive-image', 'selectedData')])
-# def dump_json(string):
-#     return json.dumps(string, indent=2)
 
 
 external_css = [

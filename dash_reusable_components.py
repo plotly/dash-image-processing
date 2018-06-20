@@ -148,13 +148,15 @@ def NamedInlineRadioItems(name, short, options, val, **kwargs):
 
 
 # Custom Image Components
-def InteractiveImagePIL(id, image, enc_format='png', **kwargs):
+def InteractiveImagePIL(image_id, image, enc_format='png', **kwargs):
     encoded_image = pil_to_b64(image, enc_format=enc_format)
     width, height = image.size
-    display_height = '{}vw'.format(round(60 * height / width))
+    print(image.size)
+    # display_height = '{}vw'.format(round(60 * height / width))
+    display_height = '50vh'
 
     return dcc.Graph(
-        id=f'graph-{id}',
+        id=image_id,
         figure={
             'data': [],
             'layout': {
@@ -184,7 +186,9 @@ def InteractiveImagePIL(id, image, enc_format='png', **kwargs):
         },
         style=_merge({
             'height': display_height,
+            'width': '100%'
         }, kwargs.get('style', {})),
+
         config={
             'modeBarButtonsToRemove': [
                 'sendDataToCloud',
@@ -194,6 +198,7 @@ def InteractiveImagePIL(id, image, enc_format='png', **kwargs):
                 'hoverCompareCartesian'
             ]
         },
+
         **_omit(['style'], kwargs)
     )
 
