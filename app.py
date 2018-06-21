@@ -32,7 +32,7 @@ app.layout = html.Div([
     # Banner display
     html.Div([
         html.H2(
-            'App Name',
+            'Dash Image Processing App',
             id='title'
         ),
         html.Img(
@@ -51,7 +51,7 @@ app.layout = html.Div([
                         id='upload-image',
                         children=[
                             'Drag and Drop or ',
-                            html.A('Select a File')
+                            html.A('Select an Image')
                         ],
                         style={
                             'width': '100%',
@@ -87,7 +87,7 @@ app.layout = html.Div([
                         id='dropdown-filters',
                         options=FILTER_OPTIONS,
                         searchable=False,
-                        placeholder='Use a Filter'
+                        placeholder='Choose a Filter...'
                     ),
 
                     html.Button('Run Operation', id='button-run-operation')
