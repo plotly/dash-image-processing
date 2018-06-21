@@ -77,18 +77,14 @@ app.layout = html.Div([
                     options=PROCESS_OPTIONS,
                     searchable=False,
                     placeholder='Process'
-                ),
-                html.Button('Submit', id='button')
-
+                )
             ])),
 
             html.Div(className='eight columns', children=[
                 html.Div(
                     id='div-interactive-image',
                     children=GRAPH_PLACEHOLDER  # Placeholder
-                ),
-
-                html.Div(id='div-image-json'),
+                )
             ])
         ])
     ])
@@ -179,10 +175,6 @@ def update_interactive_image(children):
             image=im_pil,
             enc_format='bmp',
             display_mode='fixed',
-
-
-
-
             verbose=DEBUG
         )
 

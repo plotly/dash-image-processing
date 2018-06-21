@@ -28,8 +28,12 @@ PROCESS_DICT = {
 
 
 def apply_process(image, zone, process, mode='select'):
+    filter_selected = PROCESS_DICT[process]
+
     if mode == 'select':
-        filter_selected = PROCESS_DICT[process]
         crop = image.crop(zone)
         crop_mod = crop.filter(filter_selected)
         image.paste(crop_mod, zone)
+
+    elif mode == 'select':
+        pass
