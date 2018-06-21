@@ -14,8 +14,8 @@ import dash_html_components as html
 import dash_reusable_components as drc
 import plotly.graph_objs as go
 
-from utils import PROCESS_OPTIONS, STORAGE_PLACEHOLDER, GRAPH_PLACEHOLDER
-from utils import apply_process
+from utils import FILTER_OPTIONS, STORAGE_PLACEHOLDER, GRAPH_PLACEHOLDER
+from utils import apply_filters
 
 DEBUG = True
 
@@ -73,11 +73,14 @@ app.layout = html.Div([
                 ),
 
                 dcc.Dropdown(
-                    id='dropdown-process',
-                    options=PROCESS_OPTIONS,
+                    id='dropdown-filters',
+                    options=FILTER_OPTIONS,
                     searchable=False,
-                    placeholder='Process'
-                )
+                    placeholder='Use a Filter'
+                ),
+
+
+                html.Button('Run Operation', id='button-run-operation')
             ])),
 
             html.Div(className='eight columns', children=[
@@ -93,11 +96,12 @@ app.layout = html.Div([
 
 @app.callback(Output('div-storage-image', 'children'),
               [Input('upload-image', 'contents'),
-               Input('dropdown-process', 'value')],
-              [State('interactive-image', 'selectedData'),
+               Input('button-run-operation', 'n_clicks')],
+              [State('dropdown-filters', 'value'),
+               State('interactive-image', 'selectedData'),
                State('upload-image', 'filename'),
                State('div-storage-image', 'children')])
-def update_image_storage(content, process, selectedData, new_filename, storage):
+def update_image_storage(content, n_clicks, filters, selectedData, new_filename, storage):
     t1 = time.time()
 
     # Retrieve data from storage
@@ -125,8 +129,6 @@ def update_image_storage(content, process, selectedData, new_filename, storage):
         selection_mode = 'select'
         selection_zone = (0, 0) + eval(im_size)
 
-    print(selection_zone)
-
     # If the file has changed (when a file is uploaded)
     if new_filename and new_filename != filename:
         if DEBUG:
@@ -135,13 +137,13 @@ def update_image_storage(content, process, selectedData, new_filename, storage):
         string = content.split(';base64,')[-1]
         im_pil = drc.b64_to_pil(string)
 
-    elif process:
+    elif filters:
         im_pil = drc.bytes_string_to_pil(encoding_string=enc_str, size=im_size, mode=im_mode)
 
-        apply_process(
+        apply_filters(
             image=im_pil,
             zone=selection_zone,
-            process=process,
+            filter=filters,
             mode=selection_mode)
 
     else:
@@ -180,6 +182,12 @@ def update_interactive_image(children):
 
     else:
         return GRAPH_PLACEHOLDER
+
+
+@app.callback(Output('dropdown-filters', 'value'),
+              [Input('button-run-operation', 'n_clicks')])
+def reset_dropdown_filters(n_clicks):
+    return None
 
 
 external_css = [

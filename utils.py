@@ -13,27 +13,41 @@ GRAPH_PLACEHOLDER = drc.InteractiveImagePIL(
     display_mode='fixed'
 )
 
-PROCESS_OPTIONS = [
-    {'label': 'Smooth', 'value': 'smooth'},
+FILTER_OPTIONS = [
+    {'label': 'Blur', 'value': 'blur'},
+    {'label': 'Contour', 'value': 'contour'},
+    {'label': 'Detail', 'value': 'detail'},
+    {'label': 'Enhance Edge', 'value': 'edge_enhance'},
+    {'label': 'Enhance Edge (More)', 'value': 'edge_enhance_more'},
+    {'label': 'Emboss', 'value': 'emboss'},
+    {'label': 'Find Edges', 'value': 'find_edges'},
     {'label': 'Sharpen', 'value': 'sharpen'},
-    {'label': 'Find Edges', 'value': 'find_edges'}
+    {'label': 'Smooth', 'value': 'smooth'},
+    {'label': 'Smooth (More)', 'value': 'smooth_more'}
 ]
 
 # Maps process name to the Image filter corresponding to that process
-PROCESS_DICT = {
-    'smooth': ImageFilter.SMOOTH,
+FILTERS_DICT = {
+    'blur': ImageFilter.BLUR,
+    'contour': ImageFilter.CONTOUR,
+    'detail': ImageFilter.DETAIL,
+    'edge_enhance': ImageFilter.EDGE_ENHANCE,
+    'edge_enhance_more': ImageFilter.EDGE_ENHANCE_MORE,
+    'emboss': ImageFilter.EMBOSS,
+    'find_edges': ImageFilter.FIND_EDGES,
     'sharpen': ImageFilter.SHARPEN,
-    'find_edges': ImageFilter.FIND_EDGES
+    'smooth': ImageFilter.SMOOTH,
+    'smooth_more': ImageFilter.SMOOTH_MORE
 }
 
 
-def apply_process(image, zone, process, mode='select'):
-    filter_selected = PROCESS_DICT[process]
+def apply_filters(image, zone, filter, mode='select'):
+    filter_selected = FILTERS_DICT[filter]
 
     if mode == 'select':
         crop = image.crop(zone)
         crop_mod = crop.filter(filter_selected)
         image.paste(crop_mod, zone)
 
-    elif mode == 'select':
+    elif mode == 'lasso':
         pass
