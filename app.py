@@ -14,13 +14,14 @@ import dash_html_components as html
 import dash_reusable_components as drc
 import plotly.graph_objs as go
 
-from utils import PROCESS_OPTIONS, STORAGE_PLACEHOLDER
+from utils import PROCESS_OPTIONS, STORAGE_PLACEHOLDER, GRAPH_PLACEHOLDER
 from utils import apply_process
 
 DEBUG = True
 
 app = dash.Dash(__name__)
 server = app.server
+
 
 # Custom Script for Heroku
 if 'DYNO' in os.environ:
@@ -84,12 +85,7 @@ app.layout = html.Div([
             html.Div(className='eight columns', children=[
                 html.Div(
                     id='div-interactive-image',
-                    # children=drc.InteractiveImagePIL(
-                    #     image_id='interactive-image',
-                    #     image=None,
-                    #     enc_format='bmp',
-                    #     verbose=DEBUG
-                    # )
+                    children=GRAPH_PLACEHOLDER  # Placeholder
                 ),
 
                 html.Div(id='div-image-json'),
@@ -102,13 +98,38 @@ app.layout = html.Div([
 @app.callback(Output('div-storage-image', 'children'),
               [Input('upload-image', 'contents'),
                Input('dropdown-process', 'value')],
-              [State('upload-image', 'filename'),
+              [State('interactive-image', 'selectedData'),
+               State('upload-image', 'filename'),
                State('div-storage-image', 'children')])
-def update_image_storage(content, process, new_filename, storage):
+def update_image_storage(content, process, selectedData, new_filename, storage):
     t1 = time.time()
 
     # Retrieve data from storage
     enc_str, filename, im_size, im_mode = storage
+
+    # TODO: Add support for Lasso
+    # Define the zone selected by user
+    if selectedData and selectedData['points']:  # lasso mode
+        selection_mode = 'lasso'
+        selection_zone = (0, 0, 1, 1)
+
+    elif selectedData and selectedData['range']['y']:  # select mode
+        selection_mode = 'select'
+        lower, upper = map(int, selectedData['range']['y'])
+        left, right = map(int, selectedData['range']['x'])
+
+        # Adjust height difference
+        height = eval(im_size)[1]
+        upper = height - upper
+        lower = height - lower
+
+        selection_zone = (left, upper, right, lower)
+
+    else:
+        selection_mode = 'select'
+        selection_zone = (0, 0) + eval(im_size)
+
+    print(selection_zone)
 
     # If the file has changed (when a file is uploaded)
     if new_filename and new_filename != filename:
@@ -123,9 +144,9 @@ def update_image_storage(content, process, new_filename, storage):
 
         apply_process(
             image=im_pil,
-            zone=(0, 0, 500, 500),
+            zone=selection_zone,
             process=process,
-            mode='select')
+            mode=selection_mode)
 
     else:
         return storage
@@ -142,7 +163,7 @@ def update_image_storage(content, process, new_filename, storage):
 @app.callback(Output('div-interactive-image', 'children'),
               [Input('div-storage-image', 'children')])
 def update_interactive_image(children):
-    if all(children):
+    if children[0]:
         t1 = time.time()
         enc_str, filename, im_size, im_mode = children
 
@@ -157,11 +178,16 @@ def update_interactive_image(children):
             image_id='interactive-image',
             image=im_pil,
             enc_format='bmp',
+            display_mode='fixed',
+
+
+
+
             verbose=DEBUG
         )
 
     else:
-        return None
+        return GRAPH_PLACEHOLDER
 
 
 external_css = [

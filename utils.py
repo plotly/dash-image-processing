@@ -2,6 +2,17 @@ import dash_reusable_components as drc
 from PIL import Image, ImageFilter
 
 
+enc_str, im_size, im_mode = drc.pil_to_bytes_string(Image.open('images/placeholder.png'))
+
+STORAGE_PLACEHOLDER = (enc_str, "placeholder.png", str(im_size), im_mode)
+
+GRAPH_PLACEHOLDER = drc.InteractiveImagePIL(
+    image_id='interactive-image',
+    image=Image.open('images/placeholder.png'),
+    enc_format='bmp',
+    display_mode='fixed'
+)
+
 PROCESS_OPTIONS = [
     {'label': 'Smooth', 'value': 'smooth'},
     {'label': 'Sharpen', 'value': 'sharpen'},
@@ -22,7 +33,3 @@ def apply_process(image, zone, process, mode='select'):
         crop = image.crop(zone)
         crop_mod = crop.filter(filter_selected)
         image.paste(crop_mod, zone)
-
-
-enc_str, im_size, im_mode = drc.pil_to_bytes_string(Image.open('images/placeholder.png'))
-STORAGE_PLACEHOLDER = (enc_str, "placeholder.png", str(im_size), im_mode)
