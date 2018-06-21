@@ -9,7 +9,7 @@ STORAGE_PLACEHOLDER = (enc_str, "placeholder.png", str(im_size), im_mode)
 GRAPH_PLACEHOLDER = drc.InteractiveImagePIL(
     image_id='interactive-image',
     image=Image.open('images/placeholder.png'),
-    enc_format='bmp',
+    enc_format='png',
     display_mode='fixed'
 )
 

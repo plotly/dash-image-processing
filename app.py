@@ -65,12 +65,6 @@ app.layout = html.Div([
                         accept='image/*'
                     ),
 
-                    html.Div(
-                        id='div-storage-image',
-                        children=STORAGE_PLACEHOLDER,  # [Bytes, Filename, Image Size]
-                        style={'display': 'none'}
-                    ),
-
                     # drc.NamedInlineRadioItems(
                     #     name='Selection Mode',
                     #     short='selection-mode',
@@ -95,9 +89,18 @@ app.layout = html.Div([
             ]),
 
             html.Div(className='eight columns', children=[
+                # The Interactive Image Div contains the dcc Graph showing the image, as well as the hidden div storing
+                # the true image
                 html.Div(
                     id='div-interactive-image',
-                    children=GRAPH_PLACEHOLDER  # Placeholder
+                    children=[
+                        GRAPH_PLACEHOLDER,
+                        html.Div(
+                            id='div-storage-image',
+                            children=STORAGE_PLACEHOLDER,  # [Bytes, Filename, Image Size]
+                            style={'display': 'none'}
+                        )
+                    ]
                 )
             ])
         ])
@@ -105,40 +108,18 @@ app.layout = html.Div([
 ])
 
 
-@app.callback(Output('div-storage-image', 'children'),
+@app.callback(Output('div-interactive-image', 'children'),
               [Input('upload-image', 'contents'),
                Input('button-run-operation', 'n_clicks')],
               [State('dropdown-filters', 'value'),
                State('interactive-image', 'selectedData'),
                State('upload-image', 'filename'),
                State('div-storage-image', 'children')])
-def update_image_storage(content, n_clicks, filters, selectedData, new_filename, storage):
+def update_div_interactive_image(content, n_clicks, filters, selectedData, new_filename, storage):
     t1 = time.time()
 
     # Retrieve data from storage
     enc_str, filename, im_size, im_mode = storage
-
-    # TODO: Add support for Lasso
-    # Define the zone selected by user
-    if selectedData and selectedData['points']:  # lasso mode
-        selection_mode = 'lasso'
-        selection_zone = (0, 0, 1, 1)
-
-    elif selectedData and selectedData['range']['y']:  # select mode
-        selection_mode = 'select'
-        lower, upper = map(int, selectedData['range']['y'])
-        left, right = map(int, selectedData['range']['x'])
-
-        # Adjust height difference
-        height = eval(im_size)[1]
-        upper = height - upper
-        lower = height - lower
-
-        selection_zone = (left, upper, right, lower)
-
-    else:
-        selection_mode = 'select'
-        selection_zone = (0, 0) + eval(im_size)
 
     # If the file has changed (when a file is uploaded)
     if new_filename and new_filename != filename:
@@ -148,17 +129,40 @@ def update_image_storage(content, n_clicks, filters, selectedData, new_filename,
         string = content.split(';base64,')[-1]
         im_pil = drc.b64_to_pil(string)
 
-    elif filters:
+    # If the file HAS NOT changed (which means an operation was applied)
+    else:
+        # Select using Lasso
+        if selectedData and selectedData['points']:  # TODO: Add support for Lasso
+            selection_mode = 'lasso'
+            selection_zone = (0, 0, 1, 1)
+        # Select using rectangular box
+        elif selectedData and selectedData['range']['y']:
+            selection_mode = 'select'
+            lower, upper = map(int, selectedData['range']['y'])
+            left, right = map(int, selectedData['range']['x'])
+            # Adjust height difference
+            height = eval(im_size)[1]
+            upper = height - upper
+            lower = height - lower
+            selection_zone = (left, upper, right, lower)
+        # Select the whole image
+        else:
+            selection_mode = 'select'
+            selection_zone = (0, 0) + eval(im_size)
+
+        # Creates the PIL Image object from the bytes string
         im_pil = drc.bytes_string_to_pil(encoding_string=enc_str, size=im_size, mode=im_mode)
 
-        apply_filters(
-            image=im_pil,
-            zone=selection_zone,
-            filter=filters,
-            mode=selection_mode)
+        # If the filter dropdown was chosen, apply the filter selected by the user
+        if filters:
+            apply_filters(
+                image=im_pil,
+                zone=selection_zone,
+                filter=filters,
+                mode=selection_mode)
 
-    else:
-        return storage
+        else:  # Does nothing
+            new_filename = filename
 
     enc_str, im_size, im_mode = drc.pil_to_bytes_string(im_pil)
 
@@ -166,33 +170,41 @@ def update_image_storage(content, n_clicks, filters, selectedData, new_filename,
     if DEBUG:
         print(f"Updated Image Storage in {t2-t1:.3f} sec")
 
-    return [enc_str, new_filename, str(im_size), im_mode]
-
-
-@app.callback(Output('div-interactive-image', 'children'),
-              [Input('div-storage-image', 'children')])
-def update_interactive_image(children):
-    if children[0]:
-        t1 = time.time()
-        enc_str, filename, im_size, im_mode = children
-
-        im_pil = drc.bytes_string_to_pil(encoding_string=enc_str, size=im_size, mode=im_mode)
-
-        t2 = time.time()
-        if DEBUG:
-            print(f"Size of the image file: {sys.getsizeof(enc_str)} bytes")
-            print(f"Decoded interactive image in {t2-t1:.3f} sec")
-
-        return drc.InteractiveImagePIL(
+    return [
+        drc.InteractiveImagePIL(
             image_id='interactive-image',
             image=im_pil,
-            enc_format='bmp',
+            enc_format='png',
             display_mode='fixed',
             verbose=DEBUG
-        )
+        ),
 
-    else:
-        return GRAPH_PLACEHOLDER
+        html.Div(
+            id='div-storage-image',
+            children=[enc_str, new_filename, str(im_size), im_mode],
+            style={'display': 'none'}
+        )
+    ]
+
+
+# @app.callback(Output('div-interactive-image', 'children'),
+#               [Input('div-storage-image', 'children')])
+# def update_interactive_image(children):
+#     if children[0]:
+#         t1 = time.time()
+#         enc_str, filename, im_size, im_mode = children
+#
+#         im_pil = drc.bytes_string_to_pil(encoding_string=enc_str, size=im_size, mode=im_mode)
+#
+#         t2 = time.time()
+#         if DEBUG:
+#             print(f"Size of the image file: {sys.getsizeof(enc_str)} bytes")
+#             print(f"Decoded interactive image in {t2-t1:.3f} sec")
+#
+#         return
+#
+#     else:
+#         return GRAPH_PLACEHOLDER
 
 
 @app.callback(Output('dropdown-filters', 'value'),
