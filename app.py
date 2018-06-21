@@ -71,15 +71,15 @@ app.layout = html.Div([
                         style={'display': 'none'}
                     ),
 
-                    drc.NamedInlineRadioItems(
-                        name='Selection Mode',
-                        short='selection-mode',
-                        options=[
-                            {'label': 'Rectangular', 'value': 'select'},
-                            {'label': 'Lasso', 'value': 'lasso'}
-                        ],
-                        val='select'
-                    ),
+                    # drc.NamedInlineRadioItems(
+                    #     name='Selection Mode',
+                    #     short='selection-mode',
+                    #     options=[
+                    #         {'label': 'Rectangular', 'value': 'select'},
+                    #         {'label': 'Lasso', 'value': 'lasso'}
+                    #     ],
+                    #     val='select'
+                    # ),
                 ]),
 
                 drc.Card([
