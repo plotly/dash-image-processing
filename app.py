@@ -22,7 +22,6 @@ DEBUG = True
 app = dash.Dash(__name__)
 server = app.server
 
-
 # Custom Script for Heroku
 if 'DYNO' in os.environ:
     app.scripts.append_script({
@@ -46,42 +45,54 @@ app.layout = html.Div([
     # Body
     html.Div(className="container", children=[
         html.Div(className='row', children=[
-            html.Div(className='four columns', children=drc.Card([
-                dcc.Upload(
-                    id='upload-image',
-                    children=[
-                        'Drag and Drop or ',
-                        html.A('Select a File')
-                    ],
-                    style={
-                        'width': '100%',
-                        'height': '50px',
-                        'lineHeight': '50px',
-                        'borderWidth': '1px',
-                        'borderStyle': 'dashed',
-                        'borderRadius': '5px',
-                        'textAlign': 'center'
-                    },
+            html.Div(className='four columns', children=[
+                drc.Card([
+                    dcc.Upload(
+                        id='upload-image',
+                        children=[
+                            'Drag and Drop or ',
+                            html.A('Select a File')
+                        ],
+                        style={
+                            'width': '100%',
+                            'height': '50px',
+                            'lineHeight': '50px',
+                            'borderWidth': '1px',
+                            'borderStyle': 'dashed',
+                            'borderRadius': '5px',
+                            'textAlign': 'center'
+                        },
+                        accept='image/*'
+                    ),
 
-                    accept='image/*'
-                ),
+                    html.Div(
+                        id='div-storage-image',
+                        children=STORAGE_PLACEHOLDER,  # [Bytes, Filename, Image Size]
+                        style={'display': 'none'}
+                    ),
 
-                html.Div(
-                    id='div-storage-image',
-                    children=STORAGE_PLACEHOLDER,  # [Bytes, Filename, Image Size]
-                    style={'display': 'none'}
-                ),
+                    drc.NamedInlineRadioItems(
+                        name='Selection Mode',
+                        short='selection-mode',
+                        options=[
+                            {'label': 'Rectangular', 'value': 'select'},
+                            {'label': 'Lasso', 'value': 'lasso'}
+                        ],
+                        val='select'
+                    ),
+                ]),
 
-                dcc.Dropdown(
-                    id='dropdown-filters',
-                    options=FILTER_OPTIONS,
-                    searchable=False,
-                    placeholder='Use a Filter'
-                ),
+                drc.Card([
+                    dcc.Dropdown(
+                        id='dropdown-filters',
+                        options=FILTER_OPTIONS,
+                        searchable=False,
+                        placeholder='Use a Filter'
+                    ),
 
-
-                html.Button('Run Operation', id='button-run-operation')
-            ])),
+                    html.Button('Run Operation', id='button-run-operation')
+                ]),
+            ]),
 
             html.Div(className='eight columns', children=[
                 html.Div(

@@ -268,7 +268,8 @@ def InteractiveImagePIL(image_id, image, enc_format='png', display_mode='scalabl
                 'autoScale2d',
                 'toggleSpikelines',
                 'hoverClosestCartesian',
-                'hoverCompareCartesian'
+                'hoverCompareCartesian',
+                'zoom2d'
             ]
         },
 
