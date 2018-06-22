@@ -84,9 +84,7 @@ app.layout = html.Div([
                         placeholder='Choose a Filter...'
                     ),
 
-                    html.Button('Run Operation', id='button-run-operation'),
-
-                    html.Div(id='div-temp-interactive-image')
+                    html.Button('Run Operation', id='button-run-operation')
                 ]),
             ]),
 
@@ -108,12 +106,6 @@ app.layout = html.Div([
         ])
     ])
 ])
-
-
-@app.callback(Output('div-temp-interactive-image', 'children'),
-              [Input('interactive-image', 'figure')])
-def temp(figure):
-    return figure['layout']['images'][0]['source'][:100]
 
 
 @app.callback(Output('div-interactive-image', 'children'),
