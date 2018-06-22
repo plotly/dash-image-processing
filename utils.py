@@ -4,7 +4,7 @@ from PIL import Image, ImageFilter
 
 enc_str, im_size, im_mode = drc.pil_to_bytes_string(Image.open('images/placeholder.png'))
 
-STORAGE_PLACEHOLDER = (enc_str, "placeholder.png", str(im_size), im_mode)
+STORAGE_PLACEHOLDER = ("placeholder.png", str(im_size), im_mode)
 
 GRAPH_PLACEHOLDER = drc.InteractiveImagePIL(
     image_id='interactive-image',

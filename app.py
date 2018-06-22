@@ -84,7 +84,9 @@ app.layout = html.Div([
                         placeholder='Choose a Filter...'
                     ),
 
-                    html.Button('Run Operation', id='button-run-operation')
+                    html.Button('Run Operation', id='button-run-operation'),
+
+                    html.Div(id='div-temp-interactive-image')
                 ]),
             ]),
 
@@ -108,18 +110,25 @@ app.layout = html.Div([
 ])
 
 
+@app.callback(Output('div-temp-interactive-image', 'children'),
+              [Input('interactive-image', 'figure')])
+def temp(figure):
+    return figure['layout']['images'][0]['source'][:100]
+
+
 @app.callback(Output('div-interactive-image', 'children'),
               [Input('upload-image', 'contents'),
                Input('button-run-operation', 'n_clicks')],
-              [State('dropdown-filters', 'value'),
+              [State('interactive-image', 'figure'),
+               State('dropdown-filters', 'value'),
                State('interactive-image', 'selectedData'),
                State('upload-image', 'filename'),
                State('div-storage-image', 'children')])
-def update_div_interactive_image(content, n_clicks, filters, selectedData, new_filename, storage):
+def update_div_interactive_image(content, n_clicks, figure, filters, selectedData, new_filename, storage):
     t1 = time.time()
 
-    # Retrieve data from storage
-    enc_str, filename, im_size, im_mode = storage
+    # Retrieve metadata stored in the storage
+    filename, im_size, im_mode = storage
 
     # If the file has changed (when a file is uploaded)
     if new_filename and new_filename != filename:
@@ -128,9 +137,13 @@ def update_div_interactive_image(content, n_clicks, filters, selectedData, new_f
 
         string = content.split(';base64,')[-1]
         im_pil = drc.b64_to_pil(string)
+        im_size = im_pil.size
 
     # If the file HAS NOT changed (which means an operation was applied)
     else:
+        # Retrieve the image stored inside the figure
+        enc_str = figure['layout']['images'][0]['source'].split(';base64,')[-1]
+
         # Select using Lasso
         if selectedData and selectedData['points']:  # TODO: Add support for Lasso
             selection_mode = 'lasso'
@@ -150,8 +163,8 @@ def update_div_interactive_image(content, n_clicks, filters, selectedData, new_f
             selection_mode = 'select'
             selection_zone = (0, 0) + eval(im_size)
 
-        # Creates the PIL Image object from the bytes string
-        im_pil = drc.bytes_string_to_pil(encoding_string=enc_str, size=im_size, mode=im_mode)
+        # Creates the PIL Image object from the b64 png encoding
+        im_pil = drc.b64_to_pil(string=enc_str)
 
         # If the filter dropdown was chosen, apply the filter selected by the user
         if filters:
@@ -159,12 +172,10 @@ def update_div_interactive_image(content, n_clicks, filters, selectedData, new_f
                 image=im_pil,
                 zone=selection_zone,
                 filter=filters,
-                mode=selection_mode)
-
+                mode=selection_mode
+            )
         else:  # Does nothing
             new_filename = filename
-
-    enc_str, im_size, im_mode = drc.pil_to_bytes_string(im_pil)
 
     t2 = time.time()
     if DEBUG:
@@ -181,7 +192,7 @@ def update_div_interactive_image(content, n_clicks, filters, selectedData, new_f
 
         html.Div(
             id='div-storage-image',
-            children=[enc_str, new_filename, str(im_size), im_mode],
+            children=[new_filename, str(im_size), im_mode],
             style={'display': 'none'}
         )
     ]
