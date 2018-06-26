@@ -15,7 +15,7 @@ import dash_reusable_components as drc
 import plotly.graph_objs as go
 
 from utils import FILTER_OPTIONS, STORAGE_PLACEHOLDER, GRAPH_PLACEHOLDER
-from utils import apply_filters
+from utils import apply_filters, show_histogram
 
 DEBUG = True
 
@@ -81,11 +81,20 @@ app.layout = html.Div([
                         id='dropdown-filters',
                         options=FILTER_OPTIONS,
                         searchable=False,
-                        placeholder='Choose a Filter...'
+                        placeholder='Basic Filter...'
+                    ),
+
+                    dcc.Dropdown(
+                        id='dropdown-analyze',
+                        options=[
+                            {'label': 'Histogram', 'value': 'histogram'}
+                        ],
+                        searchable=False,
+                        placeholder='Analyze...'
                     ),
 
                     html.Button('Run Operation', id='button-run-operation')
-                ]),
+                ])
             ]),
 
             html.Div(className='eight columns', children=[
@@ -101,7 +110,9 @@ app.layout = html.Div([
                             style={'display': 'none'}
                         )
                     ]
-                )
+                ),
+
+                html.Div(id='div-analysis-plot')
             ])
         ])
     ])
@@ -116,7 +127,13 @@ app.layout = html.Div([
                State('interactive-image', 'selectedData'),
                State('upload-image', 'filename'),
                State('div-storage-image', 'children')])
-def update_div_interactive_image(content, n_clicks, figure, filters, selectedData, new_filename, storage):
+def update_graph_interactive_image(content,
+                                   n_clicks,
+                                   figure,
+                                   filters,
+                                   selectedData,
+                                   new_filename,
+                                   storage):
     t1 = time.time()
 
     # Retrieve metadata stored in the storage
@@ -135,6 +152,8 @@ def update_div_interactive_image(content, n_clicks, figure, filters, selectedDat
     else:
         # Retrieve the image stored inside the figure
         enc_str = figure['layout']['images'][0]['source'].split(';base64,')[-1]
+        # Creates the PIL Image object from the b64 png encoding
+        im_pil = drc.b64_to_pil(string=enc_str)
 
         # Select using Lasso
         if selectedData and selectedData['points']:  # TODO: Add support for Lasso
@@ -154,9 +173,6 @@ def update_div_interactive_image(content, n_clicks, figure, filters, selectedDat
         else:
             selection_mode = 'select'
             selection_zone = (0, 0) + eval(im_size)
-
-        # Creates the PIL Image object from the b64 png encoding
-        im_pil = drc.b64_to_pil(string=enc_str)
 
         # If the filter dropdown was chosen, apply the filter selected by the user
         if filters:
@@ -190,24 +206,20 @@ def update_div_interactive_image(content, n_clicks, figure, filters, selectedDat
     ]
 
 
-# @app.callback(Output('div-interactive-image', 'children'),
-#               [Input('div-storage-image', 'children')])
-# def update_interactive_image(children):
-#     if children[0]:
-#         t1 = time.time()
-#         enc_str, filename, im_size, im_mode = children
-#
-#         im_pil = drc.bytes_string_to_pil(encoding_string=enc_str, size=im_size, mode=im_mode)
-#
-#         t2 = time.time()
-#         if DEBUG:
-#             print(f"Size of the image file: {sys.getsizeof(enc_str)} bytes")
-#             print(f"Decoded interactive image in {t2-t1:.3f} sec")
-#
-#         return
-#
-#     else:
-#         return GRAPH_PLACEHOLDER
+@app.callback(Output('div-analysis-plot', 'children'),
+              [Input('button-run-operation', 'n_clicks')],
+              [State('dropdown-analyze', 'value'),
+               State('interactive-image', 'figure')])
+def show_analysis_plot(n_clicks, dropdown_analyze, figure):
+    # Retrieve the image stored inside the figure
+    enc_str = figure['layout']['images'][0]['source'].split(';base64,')[-1]
+    # Creates the PIL Image object from the b64 png encoding
+    im_pil = drc.b64_to_pil(string=enc_str)
+
+
+    if dropdown_analyze == 'histogram':
+        return show_histogram(im_pil)
+
 
 
 @app.callback(Output('dropdown-filters', 'value'),
