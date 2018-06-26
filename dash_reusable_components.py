@@ -36,6 +36,8 @@ def pil_to_b64(im, enc_format='png', verbose=False):
     buff = _BytesIO()
     if enc_format == 'png':
         im.save(buff, format=enc_format, compress_level=1)
+    elif enc_format == 'jpeg':
+        im.save(buff, format=enc_format, quality=95)
     else:
         im.save(buff, format=enc_format)
     encoded = base64.b64encode(buff.getvalue()).decode("utf-8")

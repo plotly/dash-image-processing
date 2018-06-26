@@ -15,7 +15,7 @@ import dash_reusable_components as drc
 import plotly.graph_objs as go
 
 from utils import FILTER_OPTIONS, STORAGE_PLACEHOLDER, GRAPH_PLACEHOLDER
-from utils import apply_filters, show_histogram
+from utils import apply_filters, show_histogram, generate_lasso_mask
 
 DEBUG = True
 
@@ -65,15 +65,15 @@ app.layout = html.Div([
                         accept='image/*'
                     ),
 
-                    # drc.NamedInlineRadioItems(
-                    #     name='Selection Mode',
-                    #     short='selection-mode',
-                    #     options=[
-                    #         {'label': 'Rectangular', 'value': 'select'},
-                    #         {'label': 'Lasso', 'value': 'lasso'}
-                    #     ],
-                    #     val='select'
-                    # ),
+                    drc.NamedInlineRadioItems(
+                        name='Selection Mode',
+                        short='selection-mode',
+                        options=[
+                            {'label': 'Rectangular', 'value': 'select'},
+                            {'label': 'Lasso', 'value': 'lasso'}
+                        ],
+                        val='select'
+                    ),
                 ]),
 
                 drc.Card([
@@ -137,7 +137,7 @@ def update_graph_interactive_image(content,
     t1 = time.time()
 
     # Retrieve metadata stored in the storage
-    filename, im_size, im_mode = storage
+    filename = storage
 
     # If the file has changed (when a file is uploaded)
     if new_filename and new_filename != filename:
@@ -154,25 +154,26 @@ def update_graph_interactive_image(content,
         enc_str = figure['layout']['images'][0]['source'].split(';base64,')[-1]
         # Creates the PIL Image object from the b64 png encoding
         im_pil = drc.b64_to_pil(string=enc_str)
+        im_size = im_pil.size
 
         # Select using Lasso
-        if selectedData and selectedData['points']:  # TODO: Add support for Lasso
+        if selectedData and 'lassoPoints' in selectedData:
             selection_mode = 'lasso'
-            selection_zone = (0, 0, 1, 1)
+            selection_zone = generate_lasso_mask(im_pil, selectedData)
         # Select using rectangular box
-        elif selectedData and selectedData['range']['y']:
+        elif selectedData and 'range' in selectedData:
             selection_mode = 'select'
             lower, upper = map(int, selectedData['range']['y'])
             left, right = map(int, selectedData['range']['x'])
             # Adjust height difference
-            height = eval(im_size)[1]
+            height = im_size[1]
             upper = height - upper
             lower = height - lower
             selection_zone = (left, upper, right, lower)
         # Select the whole image
         else:
             selection_mode = 'select'
-            selection_zone = (0, 0) + eval(im_size)
+            selection_zone = (0, 0) + im_size
 
         # If the filter dropdown was chosen, apply the filter selected by the user
         if filters:
@@ -200,7 +201,7 @@ def update_graph_interactive_image(content,
 
         html.Div(
             id='div-storage-image',
-            children=[new_filename, str(im_size), im_mode],
+            children=new_filename,
             style={'display': 'none'}
         )
     ]
@@ -210,22 +211,28 @@ def update_graph_interactive_image(content,
               [Input('button-run-operation', 'n_clicks')],
               [State('dropdown-analyze', 'value'),
                State('interactive-image', 'figure')])
-def show_analysis_plot(n_clicks, dropdown_analyze, figure):
+def show_analysis_plot(_, dropdown_analyze, figure):
     # Retrieve the image stored inside the figure
     enc_str = figure['layout']['images'][0]['source'].split(';base64,')[-1]
     # Creates the PIL Image object from the b64 png encoding
     im_pil = drc.b64_to_pil(string=enc_str)
 
-
     if dropdown_analyze == 'histogram':
         return show_histogram(im_pil)
 
 
-
 @app.callback(Output('dropdown-filters', 'value'),
               [Input('button-run-operation', 'n_clicks')])
-def reset_dropdown_filters(n_clicks):
+def reset_dropdown_filters(_):
     return None
+
+
+@app.callback(Output('interactive-image', 'figure'),
+              [Input('radio-selection-mode', 'value')],
+              [State('interactive-image', 'figure')])
+def func(selection_mode, figure):
+    figure['layout']['dragmode'] = selection_mode
+    return figure
 
 
 external_css = [

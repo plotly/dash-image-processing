@@ -2,12 +2,12 @@ import dash_core_components as dcc
 import dash_html_components as html
 import plotly.graph_objs as go
 import dash_reusable_components as drc
-from PIL import Image, ImageFilter
+from PIL import Image, ImageFilter, ImageDraw
 
 
 enc_str, im_size, im_mode = drc.pil_to_bytes_string(Image.open('images/default.jpg'))
 
-STORAGE_PLACEHOLDER = ("default.jpg", str(im_size), im_mode)
+STORAGE_PLACEHOLDER = "default.jpg"
 
 GRAPH_PLACEHOLDER = drc.InteractiveImagePIL(
     image_id='interactive-image',
@@ -44,7 +44,26 @@ FILTERS_DICT = {
 }
 
 
-def apply_filters(image, zone, filter, mode='select'):
+def generate_lasso_mask(image, selectedData):
+    """
+    Generates a polygon mask using the given lasso coordinates
+    :param selectedData: The raw coordinates selected from the data
+    :return: The polygon mask generated from the given coordinate
+    """
+
+    height = image.size[1]
+    y_coords = selectedData['lassoPoints']['y']
+    y_coords_corrected = [height - coord for coord in y_coords]
+
+    coordinates_tuple = list(zip(selectedData['lassoPoints']['x'], y_coords_corrected))
+    mask = Image.new('L', image.size)
+    draw = ImageDraw.Draw(mask)
+    draw.polygon(coordinates_tuple, fill=255)
+
+    return mask
+
+
+def apply_filters(image, zone, filter, mode):
     filter_selected = FILTERS_DICT[filter]
 
     if mode == 'select':
@@ -53,7 +72,8 @@ def apply_filters(image, zone, filter, mode='select'):
         image.paste(crop_mod, zone)
 
     elif mode == 'lasso':
-        pass
+        im_filtered = image.filter(filter_selected)
+        image.paste(im_filtered, mask=zone)
 
 
 def show_histogram(image):
@@ -112,7 +132,7 @@ def show_histogram(image):
         )
 
     else:
-        data = [*hg_trace('Gray', 'gray', rhg)]
+        data = [*hg_trace('Gray', 'gray', hg)]
 
         layout = go.Layout(
             title='Grayscale Histogram',
