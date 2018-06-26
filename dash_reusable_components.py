@@ -169,7 +169,7 @@ def Card(children, **kwargs):
     )
 
 
-def NamedSlider(name, short, min, max, step, val, marks=None):
+def NamedSlider(name, id, min, max, step, value, marks=None):
     if marks:
         step = None
     else:
@@ -183,12 +183,12 @@ def NamedSlider(name, short, min, max, step, val, marks=None):
             html.Div(
                 style={'margin-left': '5px'},
                 children=dcc.Slider(
-                    id=f'slider-{short}',
+                    id=id,
                     min=min,
                     max=max,
                     marks=marks,
                     step=step,
-                    value=val
+                    value=value
                 )
             )
         ]

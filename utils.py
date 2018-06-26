@@ -2,7 +2,7 @@ import dash_core_components as dcc
 import dash_html_components as html
 import plotly.graph_objs as go
 import dash_reusable_components as drc
-from PIL import Image, ImageFilter, ImageDraw
+from PIL import Image, ImageFilter, ImageDraw, ImageEnhance
 
 
 enc_str, im_size, im_mode = drc.pil_to_bytes_string(Image.open('images/default.jpg'))
@@ -16,19 +16,6 @@ GRAPH_PLACEHOLDER = drc.InteractiveImagePIL(
     display_mode='fixed'
 )
 
-FILTER_OPTIONS = [
-    {'label': 'Blur', 'value': 'blur'},
-    {'label': 'Contour', 'value': 'contour'},
-    {'label': 'Detail', 'value': 'detail'},
-    {'label': 'Enhance Edge', 'value': 'edge_enhance'},
-    {'label': 'Enhance Edge (More)', 'value': 'edge_enhance_more'},
-    {'label': 'Emboss', 'value': 'emboss'},
-    {'label': 'Find Edges', 'value': 'find_edges'},
-    {'label': 'Sharpen', 'value': 'sharpen'},
-    {'label': 'Smooth', 'value': 'smooth'},
-    {'label': 'Smooth (More)', 'value': 'smooth_more'}
-]
-
 # Maps process name to the Image filter corresponding to that process
 FILTERS_DICT = {
     'blur': ImageFilter.BLUR,
@@ -41,6 +28,13 @@ FILTERS_DICT = {
     'sharpen': ImageFilter.SHARPEN,
     'smooth': ImageFilter.SMOOTH,
     'smooth_more': ImageFilter.SMOOTH_MORE
+}
+
+ENHANCEMENT_DICT = {
+    'color': ImageEnhance.Color,
+    'contrast': ImageEnhance.Contrast,
+    'brightness': ImageEnhance.Brightness,
+    'sharpness': ImageEnhance.Sharpness
 }
 
 
@@ -74,6 +68,21 @@ def apply_filters(image, zone, filter, mode):
     elif mode == 'lasso':
         im_filtered = image.filter(filter_selected)
         image.paste(im_filtered, mask=zone)
+
+
+def apply_enhancements(image, zone, enhancement, enhancement_factor, mode):
+    enhancement_selected = ENHANCEMENT_DICT[enhancement]
+    enhancer = enhancement_selected(image)
+
+    im_enhanced = enhancer.enhance(enhancement_factor)
+
+    if mode == 'select':
+        crop = im_enhanced.crop(zone)
+        image.paste(crop, box=zone)
+
+    elif mode == 'lasso':
+        image.paste(im_enhanced, mask=zone)
+
 
 
 def show_histogram(image):

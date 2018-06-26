@@ -14,8 +14,8 @@ import dash_html_components as html
 import dash_reusable_components as drc
 import plotly.graph_objs as go
 
-from utils import FILTER_OPTIONS, STORAGE_PLACEHOLDER, GRAPH_PLACEHOLDER
-from utils import apply_filters, show_histogram, generate_lasso_mask
+from utils import STORAGE_PLACEHOLDER, GRAPH_PLACEHOLDER
+from utils import apply_filters, show_histogram, generate_lasso_mask, apply_enhancements
 
 DEBUG = True
 
@@ -78,19 +78,64 @@ app.layout = html.Div([
 
                 drc.Card([
                     dcc.Dropdown(
-                        id='dropdown-filters',
-                        options=FILTER_OPTIONS,
-                        searchable=False,
-                        placeholder='Basic Filter...'
-                    ),
-
-                    dcc.Dropdown(
                         id='dropdown-analyze',
                         options=[
                             {'label': 'Histogram', 'value': 'histogram'}
                         ],
                         searchable=False,
                         placeholder='Analyze...'
+                    ),
+
+                    dcc.Dropdown(
+                        id='dropdown-filters',
+                        options=[
+                            {'label': 'Blur', 'value': 'blur'},
+                            {'label': 'Contour', 'value': 'contour'},
+                            {'label': 'Detail', 'value': 'detail'},
+                            {'label': 'Enhance Edge', 'value': 'edge_enhance'},
+                            {'label': 'Enhance Edge (More)', 'value': 'edge_enhance_more'},
+                            {'label': 'Emboss', 'value': 'emboss'},
+                            {'label': 'Find Edges', 'value': 'find_edges'},
+                            {'label': 'Sharpen', 'value': 'sharpen'},
+                            {'label': 'Smooth', 'value': 'smooth'},
+                            {'label': 'Smooth (More)', 'value': 'smooth_more'}
+                        ],
+                        searchable=False,
+                        placeholder='Basic Filter...'
+                    ),
+
+                    dcc.Dropdown(
+                        id='dropdown-enhance',
+                        options=[
+                            {'label': 'Brightness', 'value': 'brightness'},
+                            {'label': 'Color Balance', 'value': 'color'},
+                            {'label': 'Contrast', 'value': 'contrast'},
+                            {'label': 'Sharpness', 'value': 'sharpness'}
+                        ],
+                        searchable=False,
+                        placeholder='Enhance...'
+                    ),
+
+                    html.Div(
+                        id='div-enhancement-factor',
+                        style={
+                            'display': 'none',
+                            'margin': '25px 5px 30px 0px'
+                        },
+                        children=[
+                            f"Enhancement Factor:",
+                            html.Div(
+                                style={'margin-left': '5px'},
+                                children=dcc.Slider(
+                                    id='slider-enhancement-factor',
+                                    min=0,
+                                    max=2,
+                                    step=0.1,
+                                    value=1,
+                                    updatemode='drag'
+                                )
+                            )
+                        ]
                     ),
 
                     html.Button('Run Operation', id='button-run-operation')
@@ -119,19 +164,31 @@ app.layout = html.Div([
 ])
 
 
+@app.callback(Output('interactive-image', 'figure'),
+              [Input('radio-selection-mode', 'value')],
+              [State('interactive-image', 'figure')])
+def update_selection_mode(selection_mode, figure):
+    figure['layout']['dragmode'] = selection_mode
+    return figure
+
+
 @app.callback(Output('div-interactive-image', 'children'),
               [Input('upload-image', 'contents'),
                Input('button-run-operation', 'n_clicks')],
               [State('interactive-image', 'figure'),
-               State('dropdown-filters', 'value'),
                State('interactive-image', 'selectedData'),
+               State('dropdown-filters', 'value'),
+               State('dropdown-enhance', 'value'),
+               State('slider-enhancement-factor', 'value'),
                State('upload-image', 'filename'),
                State('div-storage-image', 'children')])
 def update_graph_interactive_image(content,
                                    n_clicks,
                                    figure,
-                                   filters,
                                    selectedData,
+                                   filters,
+                                   enhance,
+                                   enhancement_factor,
                                    new_filename,
                                    storage):
     t1 = time.time()
@@ -146,7 +203,6 @@ def update_graph_interactive_image(content,
 
         string = content.split(';base64,')[-1]
         im_pil = drc.b64_to_pil(string)
-        im_size = im_pil.size
 
     # If the file HAS NOT changed (which means an operation was applied)
     else:
@@ -183,8 +239,15 @@ def update_graph_interactive_image(content,
                 filter=filters,
                 mode=selection_mode
             )
-        else:  # Does nothing
-            new_filename = filename
+
+        if enhance:
+            apply_enhancements(
+                image=im_pil,
+                zone=selection_zone,
+                enhancement=enhance,
+                enhancement_factor=enhancement_factor,
+                mode=selection_mode
+            )
 
     t2 = time.time()
     if DEBUG:
@@ -221,18 +284,23 @@ def show_analysis_plot(_, dropdown_analyze, figure):
         return show_histogram(im_pil)
 
 
+@app.callback(Output('div-enhancement-factor', 'style'),
+              [Input('dropdown-enhance', 'value')],
+              [State('div-enhancement-factor', 'style')])
+def show_slider_enhancement_factor(value, style):
+    # If any enhancement is selected
+    if value:
+        style['display'] = 'block'
+    else:
+        style['display'] = 'none'
+
+    return style
+
+
 @app.callback(Output('dropdown-filters', 'value'),
               [Input('button-run-operation', 'n_clicks')])
 def reset_dropdown_filters(_):
     return None
-
-
-@app.callback(Output('interactive-image', 'figure'),
-              [Input('radio-selection-mode', 'value')],
-              [State('interactive-image', 'figure')])
-def func(selection_mode, figure):
-    figure['layout']['dragmode'] = selection_mode
-    return figure
 
 
 external_css = [
