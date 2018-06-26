@@ -5,13 +5,13 @@ import dash_reusable_components as drc
 from PIL import Image, ImageFilter
 
 
-enc_str, im_size, im_mode = drc.pil_to_bytes_string(Image.open('images/placeholder.png'))
+enc_str, im_size, im_mode = drc.pil_to_bytes_string(Image.open('images/default.jpg'))
 
-STORAGE_PLACEHOLDER = ("placeholder.png", str(im_size), im_mode)
+STORAGE_PLACEHOLDER = ("default.jpg", str(im_size), im_mode)
 
 GRAPH_PLACEHOLDER = drc.InteractiveImagePIL(
     image_id='interactive-image',
-    image=Image.open('images/placeholder.png'),
+    image=Image.open('images/default.jpg'),
     enc_format='png',
     display_mode='fixed'
 )
