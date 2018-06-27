@@ -13,6 +13,8 @@ import dash_core_components as dcc
 import dash_html_components as html
 import dash_reusable_components as drc
 import plotly.graph_objs as go
+from flask_caching import Cache
+
 
 from utils import STORAGE_PLACEHOLDER, GRAPH_PLACEHOLDER
 from utils import apply_filters, show_histogram, generate_lasso_mask, apply_enhancements
@@ -20,6 +22,14 @@ from utils import apply_filters, show_histogram, generate_lasso_mask, apply_enha
 DEBUG = True
 
 app = dash.Dash(__name__)
+CACHE_CONFIG = {
+    # try 'filesystem' if you don't want to setup redis
+    'CACHE_TYPE': 'redis',
+    'CACHE_REDIS_URL': os.environ.get('REDIS_URL', 'localhost:6379')
+}
+cache = Cache()
+cache.init_app(app.server, config=CACHE_CONFIG)
+
 server = app.server
 
 # Custom Script for Heroku
@@ -45,7 +55,7 @@ app.layout = html.Div([
     # Body
     html.Div(className="container", children=[
         html.Div(className='row', children=[
-            html.Div(className='four columns', children=[
+            html.Div(className='five columns', children=[
                 drc.Card([
                     dcc.Upload(
                         id='upload-image',
@@ -139,10 +149,12 @@ app.layout = html.Div([
                     ),
 
                     html.Button('Run Operation', id='button-run-operation')
-                ])
+                ]),
+
+                html.Div(id='div-analysis-plot')
             ]),
 
-            html.Div(className='eight columns', children=[
+            html.Div(className='seven columns', style={'float': 'right'}, children=[
                 # The Interactive Image Div contains the dcc Graph showing the image, as well as the hidden div storing
                 # the true image
                 html.Div(
@@ -155,9 +167,7 @@ app.layout = html.Div([
                             style={'display': 'none'}
                         )
                     ]
-                ),
-
-                html.Div(id='div-analysis-plot')
+                )
             ])
         ])
     ])
@@ -300,6 +310,12 @@ def show_slider_enhancement_factor(value, style):
 @app.callback(Output('dropdown-filters', 'value'),
               [Input('button-run-operation', 'n_clicks')])
 def reset_dropdown_filters(_):
+    return None
+
+
+@app.callback(Output('dropdown-enhance', 'value'),
+              [Input('button-run-operation', 'n_clicks')])
+def reset_dropdown_enhance(_):
     return None
 
 

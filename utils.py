@@ -4,7 +4,6 @@ import plotly.graph_objs as go
 import dash_reusable_components as drc
 from PIL import Image, ImageFilter, ImageDraw, ImageEnhance
 
-
 enc_str, im_size, im_mode = drc.pil_to_bytes_string(Image.open('images/default.jpg'))
 
 STORAGE_PLACEHOLDER = "default.jpg"
@@ -84,7 +83,6 @@ def apply_enhancements(image, zone, enhancement, enhancement_factor, mode):
         image.paste(im_enhanced, mask=zone)
 
 
-
 def show_histogram(image):
     def hg_trace(name, color, hg):
         line = go.Scatter(
@@ -122,9 +120,7 @@ def show_histogram(image):
             *hg_trace('Alpha', 'gray', ahg)
         ]
 
-        layout = go.Layout(
-            title='RGBA Histogram',
-        )
+        title = 'RGBA Histogram'
 
     elif image.mode == 'RGB':
         # Returns a 768 member array with counts of R, G, B values
@@ -132,20 +128,24 @@ def show_histogram(image):
         ghg = hg[256:512]
         bhg = hg[512:768]
 
-        data = [*hg_trace('Red', 'red', rhg),
-                *hg_trace('Green', 'green', ghg),
-                *hg_trace('Blue', 'blue', bhg)]
+        data = [
+            *hg_trace('Red', 'red', rhg),
+            *hg_trace('Green', 'green', ghg),
+            *hg_trace('Blue', 'blue', bhg)
+        ]
 
-        layout = go.Layout(
-            title='RGB Histogram',
-        )
+        title = 'RGB Histogram'
 
     else:
         data = [*hg_trace('Gray', 'gray', hg)]
 
-        layout = go.Layout(
-            title='Grayscale Histogram',
-        )
+        title = 'Grayscale Histogram'
+
+    layout = go.Layout(
+        title=title,
+        margin=go.Margin(l=30, r=20),
+        legend=dict(x=-.1, y=1.2, orientation="h")
+    )
 
     figure = go.Figure(data=data, layout=layout)
 
