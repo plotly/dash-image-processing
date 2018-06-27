@@ -84,18 +84,19 @@ app.layout = html.Div([
                         ],
                         val='select'
                     ),
+
+                    drc.NamedInlineRadioItems(
+                        name='Image Encoding Format',
+                        short='encoding-format',
+                        options=[
+                            {'label': 'JPEG', 'value': 'jpeg'},
+                            {'label': 'PNG', 'value': 'png'}
+                        ],
+                        val='jpeg'
+                    ),
                 ]),
 
                 drc.Card([
-                    dcc.Dropdown(
-                        id='dropdown-analyze',
-                        options=[
-                            {'label': 'Histogram', 'value': 'histogram'}
-                        ],
-                        searchable=False,
-                        placeholder='Analyze...'
-                    ),
-
                     dcc.Dropdown(
                         id='dropdown-filters',
                         options=[
@@ -151,7 +152,7 @@ app.layout = html.Div([
                     html.Button('Run Operation', id='button-run-operation')
                 ]),
 
-                html.Div(id='div-analysis-plot')
+                dcc.Graph(id='graph-histogram-colors')
             ]),
 
             html.Div(className='seven columns', style={'float': 'right'}, children=[
@@ -162,7 +163,7 @@ app.layout = html.Div([
                     children=[
                         GRAPH_PLACEHOLDER,
                         html.Div(
-                            id='div-storage-image',
+                            id='div-filename-image',
                             children=STORAGE_PLACEHOLDER,  # [Bytes, Filename, Image Size]
                             style={'display': 'none'}
                         )
@@ -191,7 +192,9 @@ def update_selection_mode(selection_mode, figure):
                State('dropdown-enhance', 'value'),
                State('slider-enhancement-factor', 'value'),
                State('upload-image', 'filename'),
-               State('div-storage-image', 'children')])
+               State('radio-selection-mode', 'value'),
+               State('radio-encoding-format', 'value'),
+               State('div-filename-image', 'children')])
 def update_graph_interactive_image(content,
                                    n_clicks,
                                    figure,
@@ -200,6 +203,8 @@ def update_graph_interactive_image(content,
                                    enhance,
                                    enhancement_factor,
                                    new_filename,
+                                   dragmode,
+                                   enc_format,
                                    storage):
     t1 = time.time()
 
@@ -267,31 +272,29 @@ def update_graph_interactive_image(content,
         drc.InteractiveImagePIL(
             image_id='interactive-image',
             image=im_pil,
-            enc_format='png',
+            enc_format=enc_format,
             display_mode='fixed',
+            dragmode=dragmode,
             verbose=DEBUG
         ),
 
         html.Div(
-            id='div-storage-image',
+            id='div-filename-image',
             children=new_filename,
             style={'display': 'none'}
         )
     ]
 
 
-@app.callback(Output('div-analysis-plot', 'children'),
-              [Input('button-run-operation', 'n_clicks')],
-              [State('dropdown-analyze', 'value'),
-               State('interactive-image', 'figure')])
-def show_analysis_plot(_, dropdown_analyze, figure):
+@app.callback(Output('graph-histogram-colors', 'figure'),
+              [Input('interactive-image', 'figure')])
+def update_histogram(figure):
     # Retrieve the image stored inside the figure
     enc_str = figure['layout']['images'][0]['source'].split(';base64,')[-1]
     # Creates the PIL Image object from the b64 png encoding
     im_pil = drc.b64_to_pil(string=enc_str)
 
-    if dropdown_analyze == 'histogram':
-        return show_histogram(im_pil)
+    return show_histogram(im_pil)
 
 
 @app.callback(Output('div-enhancement-factor', 'style'),
@@ -323,8 +326,8 @@ external_css = [
     "https://cdnjs.cloudflare.com/ajax/libs/normalize/7.0.0/normalize.min.css",  # Normalize the CSS
     "https://fonts.googleapis.com/css?family=Open+Sans|Roboto"  # Fonts
     "https://maxcdn.bootstrapcdn.com/font-awesome/4.7.0/css/font-awesome.min.css",
-    "https://cdn.rawgit.com/xhlulu/0acba79000a3fd1e6f552ed82edb8a64/raw/dash_template.css"  # For production,
-    # "https://rawgit.com/xhlulu/dash-image-display-experiments/master/custom_styles.css"  # For Development
+    "https://cdn.rawgit.com/xhlulu/0acba79000a3fd1e6f552ed82edb8a64/raw/dash_template.css",  # For production,
+    "https://cdn.rawgit.com/xhlulu/dash-image-processing/1d2ec55e/custom_styles.css"  # Custom CSS
 ]
 
 for css in external_css:

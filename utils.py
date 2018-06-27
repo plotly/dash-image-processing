@@ -143,10 +143,8 @@ def show_histogram(image):
 
     layout = go.Layout(
         title=title,
-        margin=go.Margin(l=30, r=20),
-        legend=dict(x=-.1, y=1.2, orientation="h")
+        margin=go.Margin(l=35, r=35),
+        legend=dict(x=0, y=1.15, orientation="h")
     )
 
-    figure = go.Figure(data=data, layout=layout)
-
-    return dcc.Graph(id='graph-histogram-colors', figure=figure)
+    return go.Figure(data=data, layout=layout)

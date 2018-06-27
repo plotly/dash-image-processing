@@ -24,7 +24,7 @@ def _omit(omitted_keys, d):
 
 
 # Image utility functions
-def pil_to_b64(im, enc_format='png', verbose=False):
+def pil_to_b64(im, enc_format='png', verbose=False, **kwargs):
     """
     Converts a PIL Image into base64 string for HTML displaying
     :param im: PIL Image object
@@ -34,12 +34,7 @@ def pil_to_b64(im, enc_format='png', verbose=False):
     t_start = time.time()
 
     buff = _BytesIO()
-    if enc_format == 'png':
-        im.save(buff, format=enc_format, compress_level=1)
-    elif enc_format == 'jpeg':
-        im.save(buff, format=enc_format, quality=95)
-    else:
-        im.save(buff, format=enc_format)
+    im.save(buff, format=enc_format, **kwargs)
     encoded = base64.b64encode(buff.getvalue()).decode("utf-8")
 
     t_end = time.time()
@@ -49,7 +44,7 @@ def pil_to_b64(im, enc_format='png', verbose=False):
     return encoded
 
 
-def numpy_to_b64(np_array, enc_format='png', scalar=True):
+def numpy_to_b64(np_array, enc_format='png', scalar=True, **kwargs):
     """
     Converts a numpy image into base 64 string for HTML displaying
     :param np_array:
@@ -65,7 +60,7 @@ def numpy_to_b64(np_array, enc_format='png', scalar=True):
 
     im_pil = Image.fromarray(np_array)
 
-    return pil_to_b64(im_pil, enc_format)
+    return pil_to_b64(im_pil, enc_format, **kwargs)
 
 
 def b64_to_pil(string):
@@ -199,7 +194,7 @@ def NamedInlineRadioItems(name, short, options, val, **kwargs):
     return html.Div(
         id=f'div-{short}',
         style=_merge({
-            'display': 'inline-block'
+            'display': 'block'
         }, kwargs.get('style', {})),
         children=[
             f'{name}:',
@@ -223,15 +218,18 @@ def NamedInlineRadioItems(name, short, options, val, **kwargs):
 
 
 # Custom Image Components
-def InteractiveImagePIL(image_id, image, enc_format='png', display_mode='scalable', verbose=False, **kwargs):
-    encoded_image = pil_to_b64(image, enc_format=enc_format, verbose=verbose)
+def InteractiveImagePIL(image_id, image, enc_format='png', display_mode='fixed', dragmode='select', verbose=False, **kwargs):
+    if enc_format == 'jpeg':
+        encoded_image = pil_to_b64(image, enc_format=enc_format, verbose=verbose, quality=95)
+    else:
+        encoded_image = pil_to_b64(image, enc_format=enc_format, verbose=verbose)
 
     width, height = image.size
 
     if display_mode.lower() in ['scalable', 'scale']:
         display_height = '{}vw'.format(round(60 * height / width))
     else:
-        display_height = '75vh'
+        display_height = '80vh'
 
     return dcc.Graph(
         id=image_id,
@@ -259,7 +257,7 @@ def InteractiveImagePIL(image_id, image, enc_format='png', display_mode='scalabl
                     'layer': 'below',
                     'source': HTML_IMG_SRC_PARAMETERS + encoded_image,
                 }],
-                'dragmode': 'select',
+                'dragmode': dragmode,
             }
         },
         style=_merge({
