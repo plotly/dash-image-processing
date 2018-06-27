@@ -38,6 +38,7 @@ if 'DYNO' in os.environ:
         'external_url': 'https://cdn.rawgit.com/chriddyp/ca0d8f02a1659981a0ea7f013a378bbd/raw/e79f3f789517deec58f41251f7dbb6bee72c44ab/plotly_ga.js'
     })
 
+# App Layout
 app.layout = html.Div([
     # Banner display
     html.Div([
@@ -175,12 +176,24 @@ app.layout = html.Div([
 ])
 
 
+# Update Callbacks
 @app.callback(Output('interactive-image', 'figure'),
               [Input('radio-selection-mode', 'value')],
               [State('interactive-image', 'figure')])
 def update_selection_mode(selection_mode, figure):
     figure['layout']['dragmode'] = selection_mode
     return figure
+
+
+@app.callback(Output('graph-histogram-colors', 'figure'),
+              [Input('interactive-image', 'figure')])
+def update_histogram(figure):
+    # Retrieve the image stored inside the figure
+    enc_str = figure['layout']['images'][0]['source'].split(';base64,')[-1]
+    # Creates the PIL Image object from the b64 png encoding
+    im_pil = drc.b64_to_pil(string=enc_str)
+
+    return show_histogram(im_pil)
 
 
 @app.callback(Output('div-interactive-image', 'children'),
@@ -286,17 +299,7 @@ def update_graph_interactive_image(content,
     ]
 
 
-@app.callback(Output('graph-histogram-colors', 'figure'),
-              [Input('interactive-image', 'figure')])
-def update_histogram(figure):
-    # Retrieve the image stored inside the figure
-    enc_str = figure['layout']['images'][0]['source'].split(';base64,')[-1]
-    # Creates the PIL Image object from the b64 png encoding
-    im_pil = drc.b64_to_pil(string=enc_str)
-
-    return show_histogram(im_pil)
-
-
+# Show/Hide Callbacks
 @app.callback(Output('div-enhancement-factor', 'style'),
               [Input('dropdown-enhance', 'value')],
               [State('div-enhancement-factor', 'style')])
@@ -310,6 +313,7 @@ def show_slider_enhancement_factor(value, style):
     return style
 
 
+# Reset Callbacks
 @app.callback(Output('dropdown-filters', 'value'),
               [Input('button-run-operation', 'n_clicks')])
 def reset_dropdown_filters(_):
