@@ -44,9 +44,18 @@ if 'DYNO' in os.environ:
     })
 
 
+image_string_dict = {}
+
+# @app.server.before_first_request
+# def create_image_string_dict():
+#     global image_string_dict
+
+
 def serve_layout():
     session_id = str(uuid.uuid4())
-    print(session_id)
+
+    # Serve placeholder image
+    image_string_dict[session_id] = drc.pil_to_b64(Image.open('images/default.jpg'), enc_format='jpeg')
 
     # App Layout
     return html.Div([
@@ -93,18 +102,18 @@ def serve_layout():
                             name='Selection Mode',
                             short='selection-mode',
                             options=[
-                                {'label': 'Rectangular', 'value': 'select'},
-                                {'label': 'Lasso', 'value': 'lasso'}
+                                {'label': ' Rectangular', 'value': 'select'},
+                                {'label': ' Lasso', 'value': 'lasso'}
                             ],
                             val='select'
                         ),
 
                         drc.NamedInlineRadioItems(
-                            name='Image Encoding Format',
+                            name='Image Display Format',
                             short='encoding-format',
                             options=[
-                                {'label': 'JPEG', 'value': 'jpeg'},
-                                {'label': 'PNG', 'value': 'png'}
+                                {'label': ' JPEG', 'value': 'jpeg'},
+                                {'label': ' PNG', 'value': 'png'}
                             ],
                             val='jpeg'
                         ),
@@ -166,7 +175,7 @@ def serve_layout():
                         html.Button('Run Operation', id='button-run-operation')
                     ]),
 
-                    dcc.Graph(id='graph-histogram-colors')
+                    dcc.Graph(id='graph-histogram-colors', config={'displayModeBar': False})
                 ]),
 
                 html.Div(className='seven columns', style={'float': 'right'}, children=[
@@ -203,21 +212,23 @@ def add_action_to_stack(action_stack,
     action_stack.append(new_action)
 
 
-# Recursive version to utilize memoization
+# Recursively retrieve the previous versions of the image by popping the action stack
 @cache.memoize()
-def apply_actions_on_image(path, actions):
-    actions = deepcopy(actions)
+def apply_actions_on_image(session_id, action_stack, filename, image_signature):
+    action_stack = deepcopy(action_stack)
 
-    if len(actions) == 0:
-        im = Image.open(path)
-        return im
+    if len(action_stack) == 0:
+        string = image_string_dict[session_id]
+        im_pil = drc.b64_to_pil(string)
+        return im_pil
 
     # Pop out the last action
-    last_action = actions.pop()
-    # Apply all the previous actions, and gets the image PIL
-    im_pil = apply_actions_on_image(path, actions)
+    last_action = action_stack.pop()
+    # Apply all the previous action_stack, and gets the image PIL
+    im_pil = apply_actions_on_image(session_id, action_stack, filename, image_signature)
     im_size = im_pil.size
-    # Apply the rest of the actions
+
+    # Apply the rest of the action_stack
     operation = last_action['operation']
     selectedData = last_action['selectedData']
     type = last_action['type']
@@ -269,7 +280,8 @@ def apply_actions_on_image(path, actions):
               [Input('radio-selection-mode', 'value')],
               [State('interactive-image', 'figure')])
 def update_selection_mode(selection_mode, figure):
-    figure['layout']['dragmode'] = selection_mode
+    if figure:
+        figure['layout']['dragmode'] = selection_mode
     return figure
 
 
@@ -315,26 +327,33 @@ def update_graph_interactive_image(content,
     # Action stack is the list of actions that are applied on the image to get the final result. Each action is the
     # dictionary of a given operation, the input parameter needed for that operation, and the zone selected by the
     # user.
-    filename, path, action_stack = storage
+
+    filename, image_signature, action_stack = storage
     action_stack = json.loads(action_stack)
 
     # If the file has changed (when a file is uploaded)
     if new_filename and new_filename != filename:
+        # Replace filename
         if DEBUG:
             print(filename, "replaced by", new_filename)
+        filename = new_filename
 
+        # Parse the string and convert to pil
         string = content.split(';base64,')[-1]
         im_pil = drc.b64_to_pil(string)
 
-        path = 'tmp/' + new_filename
-        im_pil.save(path)
+        # Update the image signature, which is the first 200 b64 values of the string encoding
+        image_signature = string[:200]
+
+        # Add the new string to the dictionary containing all server's image strings
+        image_string_dict[session_id] = string
 
         # Resets the action stack
         action_stack = []
 
     # If the file HAS NOT changed (which means an operation was applied)
     else:
-        # Add actions to the action stack (we have more than of filters and enhance are BOTH selected)
+        # Add actions to the action stack (we have more than one if filters and enhance are BOTH selected)
         if filters:
             type = 'filter'
             operation = filters
@@ -346,13 +365,13 @@ def update_graph_interactive_image(content,
             add_action_to_stack(action_stack, operation, type, selectedData)
 
         # Use the memoized function to apply the required actions to the picture
-        im_pil = apply_actions_on_image(path, action_stack)
+        im_pil = apply_actions_on_image(session_id, action_stack, filename, image_signature)
 
     t2 = time.time()
     if DEBUG:
         print(f"Updated Image Storage in {t2-t1:.3f} sec")
 
-    children = [
+    return [
         drc.InteractiveImagePIL(
             image_id='interactive-image',
             image=im_pil,
@@ -364,12 +383,10 @@ def update_graph_interactive_image(content,
 
         html.Div(
             id='div-storage',
-            children=[new_filename, path, json.dumps(action_stack)],
+            children=[filename, image_signature, json.dumps(action_stack)],
             style={'display': 'none'}
         )
     ]
-
-    return children
 
 
 # Show/Hide Callbacks

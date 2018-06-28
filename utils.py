@@ -5,11 +5,8 @@ import plotly.graph_objs as go
 import dash_reusable_components as drc
 from PIL import Image, ImageFilter, ImageDraw, ImageEnhance
 
-STORAGE_PLACEHOLDER = [
-    'default.jpg',
-    'images/default.jpg',
-    json.dumps([])
-]
+# [filename, image_signature, action_stack]
+STORAGE_PLACEHOLDER = [None, None, json.dumps([])]
 
 GRAPH_PLACEHOLDER = drc.InteractiveImagePIL(
     image_id='interactive-image',
@@ -19,6 +16,8 @@ GRAPH_PLACEHOLDER = drc.InteractiveImagePIL(
     dragmode='select',
     verbose=False
 )
+
+GRAPH_PLACEHOLDER = dcc.Graph(id='interactive-image')
 
 # Maps process name to the Image filter corresponding to that process
 FILTERS_DICT = {
