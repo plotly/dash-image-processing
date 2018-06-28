@@ -1,18 +1,23 @@
 import dash_core_components as dcc
 import dash_html_components as html
+import json
 import plotly.graph_objs as go
 import dash_reusable_components as drc
 from PIL import Image, ImageFilter, ImageDraw, ImageEnhance
 
-enc_str, im_size, im_mode = drc.pil_to_bytes_string(Image.open('images/default.jpg'))
-
-STORAGE_PLACEHOLDER = "default.jpg"
+STORAGE_PLACEHOLDER = [
+    'default.jpg',
+    'images/default.jpg',
+    json.dumps([])
+]
 
 GRAPH_PLACEHOLDER = drc.InteractiveImagePIL(
     image_id='interactive-image',
     image=Image.open('images/default.jpg'),
-    enc_format='png',
-    display_mode='fixed'
+    enc_format='jpeg',
+    display_mode='fixed',
+    dragmode='select',
+    verbose=False
 )
 
 # Maps process name to the Image filter corresponding to that process

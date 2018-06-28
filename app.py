@@ -1,11 +1,13 @@
 import os
 import base64
+from copy import deepcopy
+import json
 import time
 import sys
+import uuid
 
 import pandas as pd
 import numpy as np
-import json
 import dash
 from PIL import Image, ImageFilter
 from dash.dependencies import Input, Output, State
@@ -22,15 +24,18 @@ from utils import apply_filters, show_histogram, generate_lasso_mask, apply_enha
 DEBUG = True
 
 app = dash.Dash(__name__)
+server = app.server
+# Caching
 CACHE_CONFIG = {
     # try 'filesystem' if you don't want to setup redis
-    'CACHE_TYPE': 'redis',
-    'CACHE_REDIS_URL': os.environ.get('REDIS_URL', 'localhost:6379')
+    # 'CACHE_TYPE': 'redis',
+    # 'CACHE_REDIS_URL': os.environ.get('REDIS_URL', 'localhost:6379'),
+
+    'CACHE_TYPE': 'filesystem',
+    'CACHE_DIR': 'cache-directory',
 }
 cache = Cache()
 cache.init_app(app.server, config=CACHE_CONFIG)
-
-server = app.server
 
 # Custom Script for Heroku
 if 'DYNO' in os.environ:
@@ -38,142 +43,225 @@ if 'DYNO' in os.environ:
         'external_url': 'https://cdn.rawgit.com/chriddyp/ca0d8f02a1659981a0ea7f013a378bbd/raw/e79f3f789517deec58f41251f7dbb6bee72c44ab/plotly_ga.js'
     })
 
-# App Layout
-app.layout = html.Div([
-    # Banner display
-    html.Div([
-        html.H2(
-            'Dash Image Processing App',
-            id='title'
+
+def serve_layout():
+    session_id = str(uuid.uuid4())
+    print(session_id)
+
+    # App Layout
+    return html.Div([
+        # Session ID
+        html.Div(session_id, id='session-id', style={'display': 'none'}),
+
+        # Banner display
+        html.Div([
+            html.H2(
+                'Dash Image Processing App',
+                id='title'
+            ),
+            html.Img(
+                src="https://s3-us-west-1.amazonaws.com/plotly-tutorials/logo/new-branding/dash-logo-by-plotly-stripe-inverted.png"
+            )
+        ],
+            className="banner"
         ),
-        html.Img(
-            src="https://s3-us-west-1.amazonaws.com/plotly-tutorials/logo/new-branding/dash-logo-by-plotly-stripe-inverted.png"
-        )
-    ],
-        className="banner"
-    ),
 
-    # Body
-    html.Div(className="container", children=[
-        html.Div(className='row', children=[
-            html.Div(className='five columns', children=[
-                drc.Card([
-                    dcc.Upload(
-                        id='upload-image',
-                        children=[
-                            'Drag and Drop or ',
-                            html.A('Select an Image')
-                        ],
-                        style={
-                            'width': '100%',
-                            'height': '50px',
-                            'lineHeight': '50px',
-                            'borderWidth': '1px',
-                            'borderStyle': 'dashed',
-                            'borderRadius': '5px',
-                            'textAlign': 'center'
-                        },
-                        accept='image/*'
-                    ),
+        # Body
+        html.Div(className="container", children=[
+            html.Div(className='row', children=[
+                html.Div(className='five columns', children=[
+                    drc.Card([
+                        dcc.Upload(
+                            id='upload-image',
+                            children=[
+                                'Drag and Drop or ',
+                                html.A('Select an Image')
+                            ],
+                            style={
+                                'width': '100%',
+                                'height': '50px',
+                                'lineHeight': '50px',
+                                'borderWidth': '1px',
+                                'borderStyle': 'dashed',
+                                'borderRadius': '5px',
+                                'textAlign': 'center'
+                            },
+                            accept='image/*'
+                        ),
 
-                    drc.NamedInlineRadioItems(
-                        name='Selection Mode',
-                        short='selection-mode',
-                        options=[
-                            {'label': 'Rectangular', 'value': 'select'},
-                            {'label': 'Lasso', 'value': 'lasso'}
-                        ],
-                        val='select'
-                    ),
+                        drc.NamedInlineRadioItems(
+                            name='Selection Mode',
+                            short='selection-mode',
+                            options=[
+                                {'label': 'Rectangular', 'value': 'select'},
+                                {'label': 'Lasso', 'value': 'lasso'}
+                            ],
+                            val='select'
+                        ),
 
-                    drc.NamedInlineRadioItems(
-                        name='Image Encoding Format',
-                        short='encoding-format',
-                        options=[
-                            {'label': 'JPEG', 'value': 'jpeg'},
-                            {'label': 'PNG', 'value': 'png'}
-                        ],
-                        val='jpeg'
-                    ),
-                ]),
+                        drc.NamedInlineRadioItems(
+                            name='Image Encoding Format',
+                            short='encoding-format',
+                            options=[
+                                {'label': 'JPEG', 'value': 'jpeg'},
+                                {'label': 'PNG', 'value': 'png'}
+                            ],
+                            val='jpeg'
+                        ),
+                    ]),
 
-                drc.Card([
-                    dcc.Dropdown(
-                        id='dropdown-filters',
-                        options=[
-                            {'label': 'Blur', 'value': 'blur'},
-                            {'label': 'Contour', 'value': 'contour'},
-                            {'label': 'Detail', 'value': 'detail'},
-                            {'label': 'Enhance Edge', 'value': 'edge_enhance'},
-                            {'label': 'Enhance Edge (More)', 'value': 'edge_enhance_more'},
-                            {'label': 'Emboss', 'value': 'emboss'},
-                            {'label': 'Find Edges', 'value': 'find_edges'},
-                            {'label': 'Sharpen', 'value': 'sharpen'},
-                            {'label': 'Smooth', 'value': 'smooth'},
-                            {'label': 'Smooth (More)', 'value': 'smooth_more'}
-                        ],
-                        searchable=False,
-                        placeholder='Basic Filter...'
-                    ),
+                    drc.Card([
+                        dcc.Dropdown(
+                            id='dropdown-filters',
+                            options=[
+                                {'label': 'Blur', 'value': 'blur'},
+                                {'label': 'Contour', 'value': 'contour'},
+                                {'label': 'Detail', 'value': 'detail'},
+                                {'label': 'Enhance Edge', 'value': 'edge_enhance'},
+                                {'label': 'Enhance Edge (More)', 'value': 'edge_enhance_more'},
+                                {'label': 'Emboss', 'value': 'emboss'},
+                                {'label': 'Find Edges', 'value': 'find_edges'},
+                                {'label': 'Sharpen', 'value': 'sharpen'},
+                                {'label': 'Smooth', 'value': 'smooth'},
+                                {'label': 'Smooth (More)', 'value': 'smooth_more'}
+                            ],
+                            searchable=False,
+                            placeholder='Basic Filter...'
+                        ),
 
-                    dcc.Dropdown(
-                        id='dropdown-enhance',
-                        options=[
-                            {'label': 'Brightness', 'value': 'brightness'},
-                            {'label': 'Color Balance', 'value': 'color'},
-                            {'label': 'Contrast', 'value': 'contrast'},
-                            {'label': 'Sharpness', 'value': 'sharpness'}
-                        ],
-                        searchable=False,
-                        placeholder='Enhance...'
-                    ),
+                        dcc.Dropdown(
+                            id='dropdown-enhance',
+                            options=[
+                                {'label': 'Brightness', 'value': 'brightness'},
+                                {'label': 'Color Balance', 'value': 'color'},
+                                {'label': 'Contrast', 'value': 'contrast'},
+                                {'label': 'Sharpness', 'value': 'sharpness'}
+                            ],
+                            searchable=False,
+                            placeholder='Enhance...'
+                        ),
 
-                    html.Div(
-                        id='div-enhancement-factor',
-                        style={
-                            'display': 'none',
-                            'margin': '25px 5px 30px 0px'
-                        },
-                        children=[
-                            f"Enhancement Factor:",
-                            html.Div(
-                                style={'margin-left': '5px'},
-                                children=dcc.Slider(
-                                    id='slider-enhancement-factor',
-                                    min=0,
-                                    max=2,
-                                    step=0.1,
-                                    value=1,
-                                    updatemode='drag'
+                        html.Div(
+                            id='div-enhancement-factor',
+                            style={
+                                'display': 'none',
+                                'margin': '25px 5px 30px 0px'
+                            },
+                            children=[
+                                f"Enhancement Factor:",
+                                html.Div(
+                                    style={'margin-left': '5px'},
+                                    children=dcc.Slider(
+                                        id='slider-enhancement-factor',
+                                        min=0,
+                                        max=2,
+                                        step=0.1,
+                                        value=1,
+                                        updatemode='drag'
+                                    )
                                 )
-                            )
-                        ]
-                    ),
+                            ]
+                        ),
 
-                    html.Button('Run Operation', id='button-run-operation')
+                        html.Button('Run Operation', id='button-run-operation')
+                    ]),
+
+                    dcc.Graph(id='graph-histogram-colors')
                 ]),
 
-                dcc.Graph(id='graph-histogram-colors')
-            ]),
-
-            html.Div(className='seven columns', style={'float': 'right'}, children=[
-                # The Interactive Image Div contains the dcc Graph showing the image, as well as the hidden div storing
-                # the true image
-                html.Div(
-                    id='div-interactive-image',
-                    children=[
+                html.Div(className='seven columns', style={'float': 'right'}, children=[
+                    # The Interactive Image Div contains the dcc Graph showing the image, as well as the hidden div storing
+                    # the true image
+                    html.Div(id='div-interactive-image', children=[
                         GRAPH_PLACEHOLDER,
                         html.Div(
-                            id='div-filename-image',
-                            children=STORAGE_PLACEHOLDER,  # [Bytes, Filename, Image Size]
+                            id='div-storage',
+                            children=STORAGE_PLACEHOLDER,
                             style={'display': 'none'}
                         )
-                    ]
-                )
+                    ])
+                ])
             ])
         ])
     ])
-])
+
+
+app.layout = serve_layout
+
+
+def add_action_to_stack(action_stack,
+                        operation,
+                        type,
+                        selectedData):
+    """Add in-place new action to the action stack"""
+    new_action = {
+        'operation': operation,
+        'type': type,
+        'selectedData': selectedData
+    }
+
+    action_stack.append(new_action)
+
+
+# Recursive version to utilize memoization
+@cache.memoize()
+def apply_actions_on_image(path, actions):
+    actions = deepcopy(actions)
+
+    if len(actions) == 0:
+        im = Image.open(path)
+        return im
+
+    # Pop out the last action
+    last_action = actions.pop()
+    # Apply all the previous actions, and gets the image PIL
+    im_pil = apply_actions_on_image(path, actions)
+    im_size = im_pil.size
+    # Apply the rest of the actions
+    operation = last_action['operation']
+    selectedData = last_action['selectedData']
+    type = last_action['type']
+
+    # Select using Lasso
+    if selectedData and 'lassoPoints' in selectedData:
+        selection_mode = 'lasso'
+        selection_zone = generate_lasso_mask(im_pil, selectedData)
+    # Select using rectangular box
+    elif selectedData and 'range' in selectedData:
+        selection_mode = 'select'
+        lower, upper = map(int, selectedData['range']['y'])
+        left, right = map(int, selectedData['range']['x'])
+        # Adjust height difference
+        height = im_size[1]
+        upper = height - upper
+        lower = height - lower
+        selection_zone = (left, upper, right, lower)
+    # Select the whole image
+    else:
+        selection_mode = 'select'
+        selection_zone = (0, 0) + im_size
+
+    # Apply the filters
+    if type == 'filter':
+        apply_filters(
+            image=im_pil,
+            zone=selection_zone,
+            filter=operation,
+            mode=selection_mode
+        )
+    elif type == 'enhance':
+        enhancement = operation['enhancement']
+        factor = operation['enhancement_factor']
+
+        apply_enhancements(
+            image=im_pil,
+            zone=selection_zone,
+            enhancement=enhancement,
+            enhancement_factor=factor,
+            mode=selection_mode
+        )
+
+    return im_pil
 
 
 # Update Callbacks
@@ -199,18 +287,17 @@ def update_histogram(figure):
 @app.callback(Output('div-interactive-image', 'children'),
               [Input('upload-image', 'contents'),
                Input('button-run-operation', 'n_clicks')],
-              [State('interactive-image', 'figure'),
-               State('interactive-image', 'selectedData'),
+              [State('interactive-image', 'selectedData'),
                State('dropdown-filters', 'value'),
                State('dropdown-enhance', 'value'),
                State('slider-enhancement-factor', 'value'),
                State('upload-image', 'filename'),
                State('radio-selection-mode', 'value'),
                State('radio-encoding-format', 'value'),
-               State('div-filename-image', 'children')])
+               State('div-storage', 'children'),
+               State('session-id', 'children')])
 def update_graph_interactive_image(content,
                                    n_clicks,
-                                   figure,
                                    selectedData,
                                    filters,
                                    enhance,
@@ -218,11 +305,18 @@ def update_graph_interactive_image(content,
                                    new_filename,
                                    dragmode,
                                    enc_format,
-                                   storage):
+                                   storage,
+                                   session_id):
     t1 = time.time()
 
-    # Retrieve metadata stored in the storage
-    filename = storage
+    # Retrieve the name of the file stored and the action stack
+    # Filename is the name of the image file
+    # Path is the path in which the image file is stored
+    # Action stack is the list of actions that are applied on the image to get the final result. Each action is the
+    # dictionary of a given operation, the input parameter needed for that operation, and the zone selected by the
+    # user.
+    filename, path, action_stack = storage
+    action_stack = json.loads(action_stack)
 
     # If the file has changed (when a file is uploaded)
     if new_filename and new_filename != filename:
@@ -232,56 +326,33 @@ def update_graph_interactive_image(content,
         string = content.split(';base64,')[-1]
         im_pil = drc.b64_to_pil(string)
 
+        path = 'tmp/' + new_filename
+        im_pil.save(path)
+
+        # Resets the action stack
+        action_stack = []
+
     # If the file HAS NOT changed (which means an operation was applied)
     else:
-        # Retrieve the image stored inside the figure
-        enc_str = figure['layout']['images'][0]['source'].split(';base64,')[-1]
-        # Creates the PIL Image object from the b64 png encoding
-        im_pil = drc.b64_to_pil(string=enc_str)
-        im_size = im_pil.size
-
-        # Select using Lasso
-        if selectedData and 'lassoPoints' in selectedData:
-            selection_mode = 'lasso'
-            selection_zone = generate_lasso_mask(im_pil, selectedData)
-        # Select using rectangular box
-        elif selectedData and 'range' in selectedData:
-            selection_mode = 'select'
-            lower, upper = map(int, selectedData['range']['y'])
-            left, right = map(int, selectedData['range']['x'])
-            # Adjust height difference
-            height = im_size[1]
-            upper = height - upper
-            lower = height - lower
-            selection_zone = (left, upper, right, lower)
-        # Select the whole image
-        else:
-            selection_mode = 'select'
-            selection_zone = (0, 0) + im_size
-
-        # If the filter dropdown was chosen, apply the filter selected by the user
+        # Add actions to the action stack (we have more than of filters and enhance are BOTH selected)
         if filters:
-            apply_filters(
-                image=im_pil,
-                zone=selection_zone,
-                filter=filters,
-                mode=selection_mode
-            )
+            type = 'filter'
+            operation = filters
+            add_action_to_stack(action_stack, operation, type, selectedData)
 
         if enhance:
-            apply_enhancements(
-                image=im_pil,
-                zone=selection_zone,
-                enhancement=enhance,
-                enhancement_factor=enhancement_factor,
-                mode=selection_mode
-            )
+            type = 'enhance'
+            operation = {'enhancement': enhance, 'enhancement_factor': enhancement_factor}
+            add_action_to_stack(action_stack, operation, type, selectedData)
+
+        # Use the memoized function to apply the required actions to the picture
+        im_pil = apply_actions_on_image(path, action_stack)
 
     t2 = time.time()
     if DEBUG:
         print(f"Updated Image Storage in {t2-t1:.3f} sec")
 
-    return [
+    children = [
         drc.InteractiveImagePIL(
             image_id='interactive-image',
             image=im_pil,
@@ -292,11 +363,13 @@ def update_graph_interactive_image(content,
         ),
 
         html.Div(
-            id='div-filename-image',
-            children=new_filename,
+            id='div-storage',
+            children=[new_filename, path, json.dumps(action_stack)],
             style={'display': 'none'}
         )
     ]
+
+    return children
 
 
 # Show/Hide Callbacks
