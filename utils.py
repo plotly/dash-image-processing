@@ -5,17 +5,21 @@ import plotly.graph_objs as go
 import dash_reusable_components as drc
 from PIL import Image, ImageFilter, ImageDraw, ImageEnhance
 
+BUCKET_NAME = 'bucketeer-dash-image-processing'
+
 # [filename, image_signature, action_stack]
 STORAGE_PLACEHOLDER = [None, None, json.dumps([])]
 
-GRAPH_PLACEHOLDER = drc.InteractiveImagePIL(
-    image_id='interactive-image',
-    image=Image.open('images/default.jpg'),
-    enc_format='jpeg',
-    display_mode='fixed',
-    dragmode='select',
-    verbose=False
-)
+IMAGE_STRING_PLACEHOLDER = drc.pil_to_b64(Image.open('images/default.jpg').copy(), enc_format='jpeg')
+
+# GRAPH_PLACEHOLDER = drc.InteractiveImagePIL(
+#     image_id='interactive-image',
+#     image=Image.open('images/default.jpg').copy(),
+#     enc_format='jpeg',
+#     display_mode='fixed',
+#     dragmode='select',
+#     verbose=False
+# )
 
 GRAPH_PLACEHOLDER = dcc.Graph(id='interactive-image', style={'height': '80vh'})
 
