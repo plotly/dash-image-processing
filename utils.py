@@ -17,7 +17,7 @@ GRAPH_PLACEHOLDER = drc.InteractiveImagePIL(
     verbose=False
 )
 
-GRAPH_PLACEHOLDER = dcc.Graph(id='interactive-image')
+GRAPH_PLACEHOLDER = dcc.Graph(id='interactive-image', style={'height': '80vh'})
 
 # Maps process name to the Image filter corresponding to that process
 FILTERS_DICT = {

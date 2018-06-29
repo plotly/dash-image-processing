@@ -23,19 +23,16 @@ from utils import apply_filters, show_histogram, generate_lasso_mask, apply_enha
 
 DEBUG = True
 
+image_string_dict = {}
+
 app = dash.Dash(__name__)
 server = app.server
+
 # Caching
 CACHE_CONFIG = {
-    # try 'filesystem' if you don't want to setup redis
-    # 'CACHE_TYPE': 'redis',
-    # 'CACHE_REDIS_URL': os.environ.get('REDIS_URL', 'localhost:6379'),
-
     'CACHE_TYPE': 'filesystem',
     'CACHE_DIR': 'cache-directory',
 }
-cache = Cache()
-cache.init_app(app.server, config=CACHE_CONFIG)
 
 # Custom Script for Heroku
 if 'DYNO' in os.environ:
@@ -43,12 +40,14 @@ if 'DYNO' in os.environ:
         'external_url': 'https://cdn.rawgit.com/chriddyp/ca0d8f02a1659981a0ea7f013a378bbd/raw/e79f3f789517deec58f41251f7dbb6bee72c44ab/plotly_ga.js'
     })
 
+    # Change caching to redis if hosted on heroku
+    CACHE_CONFIG = {
+        'CACHE_TYPE': 'redis',
+        'CACHE_REDIS_URL': os.environ.get('REDIS_URL', 'localhost:6379'),
+    }
 
-image_string_dict = {}
-
-# @app.server.before_first_request
-# def create_image_string_dict():
-#     global image_string_dict
+cache = Cache()
+cache.init_app(app.server, config=CACHE_CONFIG)
 
 
 def serve_layout():
@@ -179,8 +178,8 @@ def serve_layout():
                 ]),
 
                 html.Div(className='seven columns', style={'float': 'right'}, children=[
-                    # The Interactive Image Div contains the dcc Graph showing the image, as well as the hidden div storing
-                    # the true image
+                    # The Interactive Image Div contains the dcc Graph showing the image, as well as the hidden div
+                    # storing the true image
                     html.Div(id='div-interactive-image', children=[
                         GRAPH_PLACEHOLDER,
                         html.Div(
@@ -198,10 +197,7 @@ def serve_layout():
 app.layout = serve_layout
 
 
-def add_action_to_stack(action_stack,
-                        operation,
-                        type,
-                        selectedData):
+def add_action_to_stack(action_stack, operation, type, selectedData):
     """Add in-place new action to the action stack"""
     new_action = {
         'operation': operation,
@@ -319,7 +315,7 @@ def update_graph_interactive_image(content,
                                    enc_format,
                                    storage,
                                    session_id):
-    t1 = time.time()
+    t_start = time.time()
 
     # Retrieve the name of the file stored and the action stack
     # Filename is the name of the image file
@@ -367,9 +363,9 @@ def update_graph_interactive_image(content,
         # Use the memoized function to apply the required actions to the picture
         im_pil = apply_actions_on_image(session_id, action_stack, filename, image_signature)
 
-    t2 = time.time()
+    t_end = time.time()
     if DEBUG:
-        print(f"Updated Image Storage in {t2-t1:.3f} sec")
+        print(f"Updated Image Storage in {t_end - t_start:.3f} sec")
 
     return [
         drc.InteractiveImagePIL(
