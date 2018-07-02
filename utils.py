@@ -8,7 +8,11 @@ from PIL import Image, ImageFilter, ImageDraw, ImageEnhance
 BUCKET_NAME = 'bucketeer-dash-image-processing'
 
 # [filename, image_signature, action_stack]
-STORAGE_PLACEHOLDER = [None, None, json.dumps([])]
+STORAGE_PLACEHOLDER = json.dumps({
+    'filename': None,
+    'image_signature': None,
+    'action_stack': []
+})
 
 IMAGE_STRING_PLACEHOLDER = drc.pil_to_b64(Image.open('images/default.jpg').copy(), enc_format='jpeg')
 

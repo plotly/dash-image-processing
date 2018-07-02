@@ -218,7 +218,13 @@ def NamedInlineRadioItems(name, short, options, val, **kwargs):
 
 
 # Custom Image Components
-def InteractiveImagePIL(image_id, image, enc_format='png', display_mode='fixed', dragmode='select', verbose=False, **kwargs):
+def InteractiveImagePIL(image_id,
+                        image,
+                        enc_format='png',
+                        display_mode='fixed',
+                        dragmode='select',
+                        verbose=False,
+                        **kwargs):
     if enc_format == 'jpeg':
         if image.mode == 'RGBA':
             image = image.convert('RGB')
