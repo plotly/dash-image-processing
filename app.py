@@ -228,6 +228,7 @@ def serve_layout():
 app.layout = serve_layout
 
 
+# Helper functions for callbacks
 def add_action_to_stack(action_stack,
                         operation,
                         operation_type,
@@ -248,6 +249,23 @@ def add_action_to_stack(action_stack,
     }
 
     action_stack.append(new_action)
+
+
+def undo_last_action(n_clicks, storage):
+    action_stack = storage['action_stack']
+
+    if n_clicks is None:
+        storage['undo_click_count'] = 0
+
+    # If the stack isn't empty and the undo click count has changed
+    elif len(action_stack) > 0 and n_clicks > storage['undo_click_count']:
+        # Remove the last action on the stack
+        action_stack.pop()
+
+        # Update the undo click count
+        storage['undo_click_count'] = n_clicks
+
+    return storage
 
 
 # Recursively retrieve the previous versions of the image by popping the action stack
@@ -342,27 +360,6 @@ def update_histogram(figure):
     return show_histogram(im_pil)
 
 
-@app.callback(Output('div-storage', 'children'),
-              [Input('button-undo', 'n_clicks')],
-              [State('div-storage', 'children')])
-def undo_last_action(n_clicks, storage):
-    storage = json.loads(storage)
-    action_stack = storage['action_stack']
-
-    if n_clicks is None:
-        storage['undo_click_count'] = 0
-
-    # If the stack isn't empty and the undo click count has changed
-    elif len(action_stack) > 0 and n_clicks > storage['undo_click_count']:
-        # Remove the last action on the stack
-        action_stack.pop()
-
-        # Update the undo click count
-        storage['undo_click_count'] = n_clicks
-
-    return json.dumps(storage)
-
-
 @app.callback(Output('div-interactive-image', 'children'),
               [Input('upload-image', 'contents'),
                Input('button-undo', 'n_clicks'),
@@ -377,7 +374,7 @@ def undo_last_action(n_clicks, storage):
                State('div-storage', 'children'),
                State('session-id', 'children')])
 def update_graph_interactive_image(content,
-                                   undo,
+                                   undo_clicks,
                                    n_clicks,
                                    selectedData,
                                    filters,
@@ -394,8 +391,9 @@ def update_graph_interactive_image(content,
     storage = json.loads(storage)
     filename = storage['filename']      # Filename is the name of the image file.
     image_signature = storage['image_signature']
-    # Action stack is the list of actions that are applied on the image to get the final result.
-    action_stack = storage['action_stack']
+
+    # Runs the undo function if the undo button was clicked. Storage stays the same otherwise.
+    storage = undo_last_action(undo_clicks, storage)
 
     # If a new file was uploaded (new file name changed)
     if new_filename and new_filename != filename:
@@ -427,15 +425,15 @@ def update_graph_interactive_image(content,
         if filters:
             type = 'filter'
             operation = filters
-            add_action_to_stack(action_stack, operation, type, selectedData)
+            add_action_to_stack(storage['action_stack'], operation, type, selectedData)
 
         if enhance:
             type = 'enhance'
             operation = {'enhancement': enhance, 'enhancement_factor': enhancement_factor}
-            add_action_to_stack(action_stack, operation, type, selectedData)
+            add_action_to_stack(storage['action_stack'], operation, type, selectedData)
 
         # Apply the required actions to the picture
-        im_pil = apply_actions_on_image(session_id, action_stack, filename, image_signature)
+        im_pil = apply_actions_on_image(session_id, storage['action_stack'], filename, image_signature)
 
     t_end = time.time()
     if DEBUG:
