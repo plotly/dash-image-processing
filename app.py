@@ -1,26 +1,19 @@
-import os
-import base64
-from copy import deepcopy
 import json
+import os
 import time
-import sys
 import uuid
-import requests
+from copy import deepcopy
 
-import pandas as pd
-import numpy as np
+import boto3
 import dash
-from PIL import Image, ImageFilter
-from dash.dependencies import Input, Output, State
 import dash_core_components as dcc
 import dash_html_components as html
-import dash_reusable_components as drc
-import plotly.graph_objs as go
-from flask_caching import Cache
-import boto3
+import requests
+from dash.dependencies import Input, Output, State
 from dotenv import load_dotenv, find_dotenv
+from flask_caching import Cache
 
-
+import dash_reusable_components as drc
 from utils import STORAGE_PLACEHOLDER, GRAPH_PLACEHOLDER, BUCKET_NAME, IMAGE_STRING_PLACEHOLDER
 from utils import apply_filters, show_histogram, generate_lasso_mask, apply_enhancements
 
@@ -36,12 +29,11 @@ if 'DYNO' in os.environ:
     })
 
     # Change caching to redis if hosted on heroku
-    CACHE_CONFIG = {
+    cache_config = {
         'CACHE_TYPE': 'redis',
         'CACHE_REDIS_URL': os.environ.get('REDIS_URL', 'localhost:6379'),
         'CACHE_THRESHOLD': 400
     }
-
 # Local Conditions
 else:
     # Make sure that your credentials are saved inside your .env file, as given here:
@@ -49,7 +41,7 @@ else:
     load_dotenv(find_dotenv())
 
     # Caching with filesystem when served locally
-    CACHE_CONFIG = {
+    cache_config = {
         'CACHE_TYPE': 'filesystem',
         'CACHE_DIR': 'cache-directory',
     }
@@ -62,7 +54,7 @@ s3 = boto3.client('s3', aws_access_key_id=access_key_id, aws_secret_access_key=s
 
 # Caching
 cache = Cache()
-cache.init_app(app.server, config=CACHE_CONFIG)
+cache.init_app(app.server, config=cache_config)
 
 
 def store_image_string(string, key_name):
@@ -148,7 +140,7 @@ def serve_layout():
                     ]),
 
                     drc.Card([
-                        dcc.Dropdown(
+                        drc.CustomDropdown(
                             id='dropdown-filters',
                             options=[
                                 {'label': 'Blur', 'value': 'blur'},
@@ -166,7 +158,7 @@ def serve_layout():
                             placeholder='Basic Filter...'
                         ),
 
-                        dcc.Dropdown(
+                        drc.CustomDropdown(
                             id='dropdown-enhance',
                             options=[
                                 {'label': 'Brightness', 'value': 'brightness'},
@@ -200,9 +192,17 @@ def serve_layout():
                             ]
                         ),
 
-                        html.Button('Run Operation', id='button-run-operation'),
+                        html.Button(
+                            'Run Operation',
+                            id='button-run-operation',
+                            style={'margin-right': '10px', 'margin-top': '5px'}
+                        ),
 
-                        html.Button('Undo', id='button-undo')
+                        html.Button(
+                            'Undo',
+                            id='button-undo',
+                            style={'margin-top': '5px'}
+                        )
                     ]),
 
                     dcc.Graph(id='graph-histogram-colors', config={'displayModeBar': False})
@@ -432,7 +432,7 @@ def update_graph_interactive_image(content,
             operation = {'enhancement': enhance, 'enhancement_factor': enhancement_factor}
             add_action_to_stack(storage['action_stack'], operation, type, selectedData)
 
-        # Apply the required actions to the picture
+        # Apply the required actions to the picture, using memoized function
         im_pil = apply_actions_on_image(session_id, storage['action_stack'], filename, image_signature)
 
     t_end = time.time()

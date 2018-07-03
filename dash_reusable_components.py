@@ -194,7 +194,9 @@ def NamedInlineRadioItems(name, short, options, val, **kwargs):
     return html.Div(
         id=f'div-{short}',
         style=_merge({
-            'display': 'block'
+            'display': 'block',
+            'margin-bottom': '5px',
+            'margin-top': '5px'
         }, kwargs.get('style', {})),
         children=[
             f'{name}:',
@@ -298,3 +300,9 @@ def DisplayImagePIL(id, image, **kwargs):
         **kwargs
     )
 
+
+def CustomDropdown(**kwargs):
+    return html.Div(
+        dcc.Dropdown(**kwargs),
+        style={'margin-top': '5px', 'margin-bottom': '5px'}
+    )
