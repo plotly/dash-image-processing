@@ -85,7 +85,7 @@ def serve_layout():
         # Banner display
         html.Div([
             html.H2(
-                'Dash Image Processing App',
+                'Image Processing App',
                 id='title'
             ),
             html.Img(
