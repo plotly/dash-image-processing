@@ -1,4 +1,4 @@
-**Dash Image Processing App**
+# Dash Image Processing App
 
 This is a demo of the Dash interactive Python framework developed by [Plotly](https://plot.ly/).
 
