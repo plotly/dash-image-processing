@@ -1,19 +1,31 @@
 import dash_core_components as dcc
 import dash_html_components as html
+import json
 import plotly.graph_objs as go
 import dash_reusable_components as drc
 from PIL import Image, ImageFilter, ImageDraw, ImageEnhance
 
-enc_str, im_size, im_mode = drc.pil_to_bytes_string(Image.open('images/default.jpg'))
+BUCKET_NAME = 'bucketeer-dash-image-processing'
 
-STORAGE_PLACEHOLDER = "default.jpg"
+# [filename, image_signature, action_stack]
+STORAGE_PLACEHOLDER = json.dumps({
+    'filename': None,
+    'image_signature': None,
+    'action_stack': []
+})
 
-GRAPH_PLACEHOLDER = drc.InteractiveImagePIL(
-    image_id='interactive-image',
-    image=Image.open('images/default.jpg'),
-    enc_format='png',
-    display_mode='fixed'
-)
+IMAGE_STRING_PLACEHOLDER = drc.pil_to_b64(Image.open('images/default.jpg').copy(), enc_format='jpeg')
+
+# GRAPH_PLACEHOLDER = drc.InteractiveImagePIL(
+#     image_id='interactive-image',
+#     image=Image.open('images/default.jpg').copy(),
+#     enc_format='jpeg',
+#     display_mode='fixed',
+#     dragmode='select',
+#     verbose=False
+# )
+
+GRAPH_PLACEHOLDER = dcc.Graph(id='interactive-image', style={'height': '80vh'})
 
 # Maps process name to the Image filter corresponding to that process
 FILTERS_DICT = {

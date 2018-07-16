@@ -4,3 +4,6 @@
 images/IU.jpg
 images/cats.jpg
 notebooks/.ipynb_checkpoints
+credentials.py
+.env
+cache-directory

@@ -11,3 +11,6 @@ scipy==1.0.1
 pillow==5.1.0
 Flask-Caching==1.4.0
 redis==2.10.6
+boto3==1.7.48
+requests==2.18.4
+python-dotenv==0.8.2

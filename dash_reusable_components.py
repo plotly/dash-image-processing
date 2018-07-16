@@ -194,7 +194,9 @@ def NamedInlineRadioItems(name, short, options, val, **kwargs):
     return html.Div(
         id=f'div-{short}',
         style=_merge({
-            'display': 'block'
+            'display': 'block',
+            'margin-bottom': '5px',
+            'margin-top': '5px'
         }, kwargs.get('style', {})),
         children=[
             f'{name}:',
@@ -218,9 +220,17 @@ def NamedInlineRadioItems(name, short, options, val, **kwargs):
 
 
 # Custom Image Components
-def InteractiveImagePIL(image_id, image, enc_format='png', display_mode='fixed', dragmode='select', verbose=False, **kwargs):
+def InteractiveImagePIL(image_id,
+                        image,
+                        enc_format='png',
+                        display_mode='fixed',
+                        dragmode='select',
+                        verbose=False,
+                        **kwargs):
     if enc_format == 'jpeg':
-        encoded_image = pil_to_b64(image, enc_format=enc_format, verbose=verbose, quality=95)
+        if image.mode == 'RGBA':
+            image = image.convert('RGB')
+        encoded_image = pil_to_b64(image, enc_format=enc_format, verbose=verbose, quality=80)
     else:
         encoded_image = pil_to_b64(image, enc_format=enc_format, verbose=verbose)
 
@@ -290,3 +300,9 @@ def DisplayImagePIL(id, image, **kwargs):
         **kwargs
     )
 
+
+def CustomDropdown(**kwargs):
+    return html.Div(
+        dcc.Dropdown(**kwargs),
+        style={'margin-top': '5px', 'margin-bottom': '5px'}
+    )
