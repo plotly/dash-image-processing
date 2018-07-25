@@ -10,7 +10,7 @@ BUCKET_NAME = 'bucketeer-dash-image-processing'
 # [filename, image_signature, action_stack]
 STORAGE_PLACEHOLDER = json.dumps({
     'filename': None,
-    'image_signature': None,
+    'image_signature': None, 
     'action_stack': []
 })
 
@@ -117,9 +117,9 @@ def show_histogram(image):
         ahg = hg[768:]
 
         data = [
-            *hg_trace('Red', 'red', rhg),
-            *hg_trace('Green', 'green', ghg),
-            *hg_trace('Blue', 'blue', bhg),
+            *hg_trace('Red', '#FF4136', rhg),
+            *hg_trace('Green', '#2ECC40', ghg),
+            *hg_trace('Blue', '#0074D9', bhg),
             *hg_trace('Alpha', 'gray', ahg)
         ]
 
