@@ -132,9 +132,9 @@ def show_histogram(image):
         bhg = hg[512:768]
 
         data = [
-            *hg_trace('Red', 'red', rhg),
-            *hg_trace('Green', 'green', ghg),
-            *hg_trace('Blue', 'blue', bhg)
+            *hg_trace('Red', '#FF4136', rhg),
+            *hg_trace('Green', '#2ECC40', ghg),
+            *hg_trace('Blue', '#0074D9', bhg),
         ]
 
         title = 'RGB Histogram'
