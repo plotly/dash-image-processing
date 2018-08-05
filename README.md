@@ -1,5 +1,11 @@
 # Dash Image Processing App
 
+
+[![GitHub license](https://img.shields.io/github/license/plotly/dash-image-processing.svg)](https://github.com/plotly/dash-image-processing/blob/master/LICENSE.md)
+[![GitHub issues](https://img.shields.io/github/issues/plotly/dash-image-processing.svg)](https://github.com/plotly/dash-image-processing/issues)
+[![GitHub forks](https://img.shields.io/github/forks/plotly/dash-image-processing.svg)](https://github.com/plotly/dash-image-processing/network)
+[![GitHub stars](https://img.shields.io/github/stars/plotly/dash-image-processing.svg)](https://github.com/plotly/dash-image-processing/stargazers)
+
 This is a demo of the Dash interactive Python framework developed by [Plotly](https://plot.ly/).
 
 Dash abstracts away all of the technologies and protocols required to build an interactive web-based application and is a simple and effective way to bind a user interface around your Python code. To learn more check out our [documentation](https://plot.ly/dash).
@@ -65,6 +71,7 @@ Although only a subset of Pillow is currently present, you are welcome to add an
 ## Authors
 
 * **Xing Han Lu** - *Initial Work* - [@xhlulu](https://github.com/xhlulu)
+* **Chris** - *Code Review* - [@chriddyp](https://github.com/chriddyp)
 
 See also the list of [contributors](https://github.com/plotly/dash-svm/contributors) who participated in this project.
 
