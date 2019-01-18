@@ -17,11 +17,12 @@ Try out the [demo app here](https://dash-image-processing.plot.ly/).
 
 ## Getting Started
 ### Using the demo
-This demo lets you interactive explore Support Vector Machine (SVM). 
+This demo lets you interactively explore different image processing
+filters. You can upload your own image or use the one provided with the
+demo.
 
-It includes a few artificially generated datasets that you can choose from the dropdown, and that you can modify by changing the sample size and the noise level of those datasets.
-
-The other dropdowns and sliders lets you change the parameters of your classifier, such that it could increase or decrease its accuracy.
+Filters can be applied either to the whole image, or to selections
+created with one of the selection tools.
 
 ### Running the app locally
 
