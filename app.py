@@ -26,14 +26,10 @@ server = app.server
 
 # Heroku Conditions
 if 'DYNO' in os.environ:
-    app.scripts.append_script({
-        'external_url': 'https://cdn.rawgit.com/chriddyp/ca0d8f02a1659981a0ea7f013a378bbd/raw/e79f3f789517deec58f41251f7dbb6bee72c44ab/plotly_ga.js'
-    })
-
     # Change caching to redis if hosted on heroku
     cache_config = {
         'CACHE_TYPE': 'redis',
-        'CACHE_REDIS_URL': os.environ.get('REDIS_URL', 'localhost:6379'),
+        'CACHE_REDIS_URL': os.environ["REDIS_URL"],
         'CACHE_THRESHOLD': 400
     }
 # Local Conditions
@@ -534,21 +530,6 @@ def reset_dropdown_filters(_):
 def reset_dropdown_enhance(_):
     return None
 
-
-external_css = [
-    # Normalize the CSS
-    "https://cdnjs.cloudflare.com/ajax/libs/normalize/7.0.0/normalize.min.css",
-    # Fonts
-    "https://fonts.googleapis.com/css?family=Open+Sans|Roboto"
-    "https://maxcdn.bootstrapcdn.com/font-awesome/4.7.0/css/font-awesome.min.css",
-    # For production
-    "https://cdn.rawgit.com/xhlulu/0acba79000a3fd1e6f552ed82edb8a64/raw/dash_template.css",
-    # Custom CSS
-    "https://cdn.rawgit.com/xhlulu/dash-image-processing/1d2ec55e/custom_styles.css",
-]
-
-for css in external_css:
-    app.css.append_css({"external_url": css})
 
 # Running the server
 if __name__ == '__main__':
