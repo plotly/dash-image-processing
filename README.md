@@ -49,6 +49,25 @@ Run the app
 python app.py
 ```
 
+
+## Development
+
+### S3 Storage
+
+This app uses S3 to store user input images. To use this app locally, make sure to create a `.env` file in the root directory with the following content:
+```
+BUCKETEER_AWS_SECRET_ACCESS_KEY=***********
+BUCKETEER_AWS_ACCESS_KEY_ID=***********
+BUCKETEER_BUCKET_NAME=**********
+```
+
+All this information is given when you create a bucket in AWS. For Plotly devs, the bucket name is `dash-image-processing-bucket`.
+
+### Dash Deployment Server
+If you are looking to host this app on the Dash Deployment Server, make sure:
+* That you have linked a Redis database to your app.
+* To configure S3 storage by adding the content of `.env` as environment variables (in Settings).
+
 ## About the app
 This app wraps Pillow, a powerful image processing library in Python, and abstracts all the operations through an easy-to-use GUI. All the computation is done on the back-end through Dash, and image transfer is optimized through session-based Redis caching and S3 storage.
 
