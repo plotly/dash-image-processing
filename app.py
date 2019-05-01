@@ -24,9 +24,9 @@ DEBUG = True
 app = dash.Dash(__name__)
 server = app.server
 
-# Heroku Conditions
-if 'DYNO' in os.environ:
-    # Change caching to redis if hosted on heroku
+
+if 'REDIS_URL' in os.environ:
+    # Change caching to redis if hosted on dds
     cache_config = {
         'CACHE_TYPE': 'redis',
         'CACHE_REDIS_URL': os.environ["REDIS_URL"],

@@ -5,7 +5,6 @@ import plotly.graph_objs as go
 import dash_reusable_components as drc
 from PIL import Image, ImageFilter, ImageDraw, ImageEnhance
 
-BUCKET_NAME = 'bucketeer-dash-image-processing'
 
 # [filename, image_signature, action_stack]
 STORAGE_PLACEHOLDER = json.dumps({
