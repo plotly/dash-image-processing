@@ -542,4 +542,4 @@ def reset_dropdown_enhance(_):
 
 # Running the server
 if __name__ == '__main__':
-    app.run_server(debug=True, port=8051)
+    app.run_server(debug=True)
