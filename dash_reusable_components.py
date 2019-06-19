@@ -245,15 +245,17 @@ def InteractiveImagePIL(image_id,
                 'margin': go.Margin(l=40, b=40, t=26, r=10),
                 'xaxis': {
                     'range': (0, width),
-                    'scaleanchor': 'y',
-                    'scaleratio': 1,
+                    # 'scaleanchor': 'y',
+                    # 'scaleratio': 1,
                     'color': 'white',
-                    'gridcolor': 'darkgray'
+                    'gridcolor': 'white',
+                    'tickwidth': 1,
                 },
                 'yaxis': {
                     'range': (0, height),
                     'color': 'white',
-                    'gridcolor': 'darkgray'
+                    'gridcolor': 'white',
+                    'tickwidth': 1,
                 },
                 'images': [{
                     'xref': 'x',
