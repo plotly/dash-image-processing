@@ -9,7 +9,6 @@ import numpy as np
 import plotly.graph_objs as go
 from PIL import Image
 
-
 # Variables
 HTML_IMG_SRC_PARAMETERS = 'data:image/png;base64, '
 
@@ -223,7 +222,6 @@ def NamedInlineRadioItems(name, short, options, val, **kwargs):
 def InteractiveImagePIL(image_id,
                         image,
                         enc_format='png',
-                        display_mode='fixed',
                         dragmode='select',
                         verbose=False,
                         **kwargs):
@@ -236,24 +234,26 @@ def InteractiveImagePIL(image_id,
 
     width, height = image.size
 
-    if display_mode.lower() in ['scalable', 'scale']:
-        display_height = '{}vw'.format(round(60 * height / width))
-    else:
-        display_height = '80vh'
-
     return dcc.Graph(
         id=image_id,
         figure={
             'data': [],
             'layout': {
+                'autosize': True,
+                'paper_bgcolor': '#272a31',
+                'plot_bgcolor': '#272a31',
                 'margin': go.Margin(l=40, b=40, t=26, r=10),
                 'xaxis': {
                     'range': (0, width),
                     'scaleanchor': 'y',
-                    'scaleratio': 1
+                    'scaleratio': 1,
+                    'color': 'white',
+                    'gridcolor': 'darkgray'
                 },
                 'yaxis': {
-                    'range': (0, height)
+                    'range': (0, height),
+                    'color': 'white',
+                    'gridcolor': 'darkgray'
                 },
                 'images': [{
                     'xref': 'x',
@@ -270,10 +270,6 @@ def InteractiveImagePIL(image_id,
                 'dragmode': dragmode,
             }
         },
-        style=_merge({
-            'height': display_height,
-            'width': '100%'
-        }, kwargs.get('style', {})),
 
         config={
             'modeBarButtonsToRemove': [
